@@ -6,17 +6,39 @@
     <title>Find Paradise</title>
     <link href="https://fonts.googleapis.com/css?family=Roboto&display=swap" rel="stylesheet">
     <style>
-        /* Set Roboto font, default colors */
-        body {
-            font-family: 'Roboto', sans-serif;
-            background-color: rgb(0, 90, 117);
-            color: black;
+        /* Updated modern design styles for a tech reference site */
+        :root {
+            --background-color: #f4f6f8;
+            --primary-color: #0a84ff;
+            /* modern blue */
+            --text-color: #333;
+            --accent-color: #ff2d55;
+            /* modern red accent */
         }
 
-        /* Make header and button text blue */
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+
         h1,
-        button {
-            color: rgb(174, 197, 231);
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            color: var(--primary-color);
+            font-family: 'Roboto Slab', serif;
+        }
+
+        a {
+            color: var(--accent-color);
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
         }
 
         /* Dark mode styles */
