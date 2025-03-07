@@ -68,6 +68,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     from the horizon.
                 </div>
             `;
+
+            // Draw the direction indicator
+            drawDirectionIndicator(direction.azimuth, direction.isAboveHorizon ? direction.elevation : -direction.elevation);
         } catch (error) {
             console.error('Error:', error);
             resultDiv.innerHTML = 'Error calculating direction. Please try again.';
@@ -139,4 +142,97 @@ function calculateDirectionToParadise(lat, lng, datetime) {
         isAboveHorizon: isAboveHorizon,
         compass: compass
     };
+}
+
+// Function to draw the direction and elevation indicator
+function drawDirectionIndicator(azimuth, elevation) {
+    const canvas = document.getElementById('directionIndicator');
+    if (!canvas) return;
+    
+    // Make canvas visible
+    canvas.style.display = 'block';
+    
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const radius = Math.min(width, height) / 2.2; // Slightly smaller than canvas
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, width, height);
+    
+    // Set styles for dark mode
+    ctx.strokeStyle = '#a9a9aa';
+    ctx.fillStyle = '#a9a9aa';
+    ctx.lineWidth = 2;
+    ctx.font = '14px Roboto, sans-serif';
+    
+    // Draw the circle
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+    ctx.stroke();
+    
+    // Draw horizon line
+    ctx.beginPath();
+    ctx.moveTo(centerX - radius, centerY);
+    ctx.lineTo(centerX + radius, centerY);
+    ctx.stroke();
+    
+    // Draw degree markings
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    // 0° marks (left and right)
+    ctx.fillText("0°", centerX - radius - 15, centerY);
+    ctx.fillText("0°", centerX + radius + 15, centerY);
+    
+    // 90° marks (top and bottom)
+    ctx.fillText("90°", centerX, centerY - radius - 15);
+    ctx.fillText("90°", centerX, centerY + radius + 15);
+    
+    // Determine which side to show the compass direction
+    const isWesterly = (azimuth >= 225 && azimuth <= 360) || (azimuth >= 0 && azimuth < 45);
+    
+    // Display the compass direction
+    ctx.font = '16px Roboto, sans-serif';
+    ctx.textAlign = 'center';
+    if (isWesterly) {
+        ctx.fillText(getCompassDirection(azimuth), centerX - radius - 25, centerY - 20);
+    } else {
+        ctx.fillText(getCompassDirection(azimuth), centerX + radius + 25, centerY - 20);
+    }
+    
+    // Calculate the position of the indicator line
+    const elevationRadians = Math.abs(elevation) * Math.PI / 180;
+    const directionMultiplier = isWesterly ? -1 : 1; // Left or right side
+    const verticalMultiplier = elevation >= 0 ? -1 : 1; // Above or below horizon
+    
+    const indicatorEndX = centerX + directionMultiplier * radius * Math.cos(elevationRadians);
+    const indicatorEndY = centerY + verticalMultiplier * radius * Math.sin(elevationRadians);
+    
+    // Draw the indicator line
+    ctx.beginPath();
+    ctx.moveTo(centerX, centerY);
+    ctx.lineTo(indicatorEndX, indicatorEndY);
+    ctx.strokeStyle = '#ff2d55'; // Use accent color for the line
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    
+    // Draw the angle value at the end of the line
+    ctx.fillStyle = '#ff2d55'; // Use accent color for the text
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '14px Roboto, sans-serif';
+    ctx.fillText(`${Math.abs(elevation).toFixed(1)}°`, 
+        centerX + directionMultiplier * (radius + 25) * Math.cos(elevationRadians),
+        centerY + verticalMultiplier * (radius + 25) * Math.sin(elevationRadians));
+}
+
+// Helper function to get compass direction from azimuth
+function getCompassDirection(azimuth) {
+    const compassDirections = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 
+                              'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+    const compassIndex = Math.floor(((azimuth + 11.25) % 360) / 22.5);
+    return compassDirections[compassIndex];
 }
