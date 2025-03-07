@@ -220,11 +220,11 @@ function drawDirectionIndicator(azimuth, elevation) {
     const indicatorEndX = centerX + directionMultiplier * radius * Math.cos(elevationRadians);
     const indicatorEndY = centerY + verticalMultiplier * radius * Math.sin(elevationRadians);
     
-    // Draw the indicator line - change to yellow
+    // Draw the indicator line - change to orange
     ctx.beginPath();
     ctx.moveTo(centerX, centerY);
     ctx.lineTo(indicatorEndX, indicatorEndY);
-    ctx.strokeStyle = '#FFFF00'; // Change from blue to yellow
+    ctx.strokeStyle = '#FFA500'; // Change from yellow to orange
     ctx.lineWidth = 3;
     ctx.stroke();
     
