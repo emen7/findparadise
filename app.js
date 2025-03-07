@@ -113,14 +113,10 @@ function calculateDirectionToParadise(lat, lng, datetime) {
     const sinAlt = Math.sin(decRad) * Math.sin(latRad) + Math.cos(decRad) * Math.cos(latRad) * Math.cos(haRad);
     let elevation = Math.asin(Math.max(-1, Math.min(1, sinAlt))) * 180 / Math.PI;
     
-    // Normalize elevation to be a positive value between 0 and 45 degrees
-    // First, get the absolute value (distance from horizon regardless of up/down)
-    const absElevation = Math.abs(elevation);
-    // Then cap at 45 degrees maximum
-    const normalizedElevation = Math.min(absElevation, 45);
-    
-    // Remember whether it was originally above or below horizon for display purposes
+    // Simply determine if it's above or below horizon, but keep actual value
     const isAboveHorizon = elevation > 0;
+    // Use absolute value only for display purposes, don't cap at 45
+    const absElevation = Math.abs(elevation);
     
     // Calculate azimuth (from north, clockwise)
     const cosAz = (Math.sin(decRad) - Math.sin(latRad) * sinAlt) / (Math.cos(latRad) * Math.cos(Math.asin(sinAlt)));
@@ -139,7 +135,7 @@ function calculateDirectionToParadise(lat, lng, datetime) {
     
     return {
         azimuth: azimuth,
-        elevation: normalizedElevation,
+        elevation: absElevation, // Return the absolute value without capping
         isAboveHorizon: isAboveHorizon,
         compass: compass
     };
