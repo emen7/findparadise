@@ -3,15 +3,16 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Find Paradise</title>
     <link href="https://fonts.googleapis.com/css?family=Roboto&display=swap" rel="stylesheet">
     <style>
         /* Updated modern design styles for a tech reference site */
         :root {
-            --background-color: #f4f6f8;
-            --primary-color: #0a84ff;
+            --background-color: #5f6061;
+            --primary-color: #a9a9aa;
             /* modern blue */
-            --text-color: #333;
+            --text-color: #ffffff;
             --accent-color: #ff2d55;
             /* modern red accent */
         }
@@ -29,7 +30,7 @@
         h5,
         h6 {
             color: var(--primary-color);
-            font-family: 'Roboto Slab', serif;
+            font-family: 'Roboto', serif;
         }
 
         a {
@@ -43,13 +44,38 @@
 
         /* Dark mode styles */
         .dark-mode {
-            background-color: #121212;
+            background-color: #2b2b2b;
             color: #e0e0e0;
         }
 
         .dark-mode h1,
         .dark-mode button {
-            color: rgb(11, 11, 192);
+            color: rgb(131, 129, 129);
+        }
+
+        /* Add mobile responsiveness */
+        @media (max-width: 600px) {
+            body {
+                font-size: 18px;
+                /* Increase base font size */
+            }
+
+            h1,
+            h2,
+            h3,
+            h4,
+            h5,
+            h6 {
+                font-size: 1.5em;
+                /* Scale headings for mobile */
+            }
+
+            input,
+            button {
+                font-size: 1rem;
+                /* Increase font size for form elements */
+                padding: 0.5em;
+            }
         }
     </style>
 </head>
