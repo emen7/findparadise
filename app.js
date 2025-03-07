@@ -57,19 +57,36 @@ function calculateDirectionToParadise(lat, lng, datetime) {
         dec: -29.00781 // Declination in degrees (-29° 0' 28.1")
     };
     
-    // Convert to astronomical coordinates and calculate azimuth/elevation
-    // This is a placeholder - implement actual astronomical calculations here
+    // Parse the datetime input
     const date = new Date(datetime);
     
-    // Simplified calculation for demo purposes
-    // In a real app, use a proper astronomical library
-    const hourAngle = (date.getUTCHours() + date.getUTCMinutes()/60) * 15 - lng - SgrA.ra;
+    // Calculate Local Sidereal Time (LST)
+    const utc = date.getTime() / 86400000 + 2440587.5; // Convert to Julian Date
+    const jd2000 = 2451545.0;
+    const t = (utc - jd2000) / 36525;
+    const gmst = (280.46061837 + 360.98564736629 * (utc - jd2000) + 0.000387933 * t * t - t * t * t / 38710000.0) % 360;
+    const lst = (gmst + lng) % 360;
     
-    // Very simplified azimuth calculation (not accurate)
-    const azimuth = ((hourAngle + 360) % 360);
+    // Calculate hour angle in degrees
+    const hourAngle = (lst - SgrA.ra + 360) % 360;
     
-    // Very simplified elevation calculation (not accurate)
-    const elevation = SgrA.dec - lat + Math.sin(date.getUTCHours() / 24 * 2 * Math.PI) * 10;
+    // Convert degrees to radians
+    const latRad = lat * Math.PI / 180;
+    const decRad = SgrA.dec * Math.PI / 180;
+    const haRad = hourAngle * Math.PI / 180;
+    
+    // Calculate altitude (elevation)
+    const sinAlt = Math.sin(latRad) * Math.sin(decRad) + Math.cos(latRad) * Math.cos(decRad) * Math.cos(haRad);
+    const elevation = Math.asin(sinAlt) * 180 / Math.PI;
+    
+    // Calculate azimuth
+    let cosAz = (Math.sin(decRad) - Math.sin(latRad) * sinAlt) / (Math.cos(latRad) * Math.cos(Math.asin(sinAlt)));
+    cosAz = Math.max(-1, Math.min(1, cosAz)); // Clamp to valid range
+    
+    let azimuth = Math.acos(cosAz) * 180 / Math.PI;
+    if (Math.sin(haRad) > 0) {
+        azimuth = 360 - azimuth;
+    }
     
     // Convert azimuth to compass direction
     const compassDirections = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 
