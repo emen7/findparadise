@@ -54,16 +54,11 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             
             resultDiv.innerHTML = `
-                <div class="result-section">
-                    <strong>Location:</strong> ${data.results[0].formatted}<br>
-                    <strong>Local Time:</strong> ${timeString}
-                </div>
-                
-                <div class="result-section">
-                    <strong>To Find Paradise:</strong> Face ${direction.compass} (${direction.azimuth.toFixed(2)}°) and look 
-                    ${direction.elevation > 0 ? 'up' : 'down'} ${Math.abs(direction.elevation).toFixed(2)}° 
-                    from the horizon.
-                </div>
+                <strong>Location:</strong> ${data.results[0].formatted}<br>
+                <strong>Local Time:</strong> ${timeString}<br>
+                <strong>To Find Paradise:</strong> Face ${direction.compass} (${direction.azimuth.toFixed(2)}°) and look 
+                ${direction.elevation > 0 ? 'up' : 'down'} ${Math.abs(direction.elevation).toFixed(2)}° 
+                from the horizon.
             `;
         } catch (error) {
             console.error('Error:', error);
