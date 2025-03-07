@@ -201,10 +201,10 @@ function drawDirectionIndicator(azimuth, elevation) {
     const compassDirection = getCompassDirection(azimuth);
     
     if (isWesterly) {
-        // Position westerly directions further left with even more space (60px instead of 50px)
-        ctx.fillText(compassDirection, centerX - radius - 60, centerY - 20);
+        // Position westerly directions even further left (70px instead of 60px)
+        ctx.fillText(compassDirection, centerX - radius - 70, centerY - 20);
     } else {
-        // Position easterly directions further right with even more space
+        // Position easterly directions further right with more space
         ctx.fillText(compassDirection, centerX + radius + 60, centerY - 20);
     }
     
@@ -220,12 +220,12 @@ function drawDirectionIndicator(azimuth, elevation) {
     ctx.beginPath();
     ctx.moveTo(centerX, centerY);
     ctx.lineTo(indicatorEndX, indicatorEndY);
-    ctx.strokeStyle = '#ff2d55'; // Use accent color for the line
+    ctx.strokeStyle = '#0078D7'; // Change from red (#ff2d55) to azure blue
     ctx.lineWidth = 3;
     ctx.stroke();
     
-    // Draw the angle value at the end of the line - move further out
-    ctx.fillStyle = '#ff2d55';
+    // Draw the angle value at the end of the line - also change to azure blue
+    ctx.fillStyle = '#0078D7'; // Change from red to azure blue
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.font = '14px Roboto, sans-serif';
