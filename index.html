@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Find Paradise</title>
+    <link href="https://fonts.googleapis.com/css?family=Roboto&display=swap" rel="stylesheet">
+    <style>
+        /* Set Roboto font, default colors */
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: rgb(147, 184, 214);
+            color: black;
+        }
+
+        /* Make header and button text blue */
+        h1,
+        button {
+            color: rgb(0, 102, 255);
+        }
+
+        /* Dark mode styles */
+        .dark-mode {
+            background-color: #121212;
+            color: #e0e0e0;
+        }
+
+        .dark-mode h1,
+        .dark-mode button {
+            color: blue;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="toggleContainer" style="position:absolute; top:10px; left:10px;">
+        <label style="cursor:pointer;">
+            Dark Mode: <input type="checkbox" id="darkModeToggle">
+        </label>
+    </div>
+    <h1><br>Find Paradise</h1>
+    <form id="paradiseForm">
+        <label for="location">Enter your location:</label>
+        <input type="text" id="location" name="location" required />
+        <br><br>
+        <label for="datetime">Enter current date & time:</label>
+        <input type="datetime-local" id="datetime" name="datetime" required />
+        <br><br>
+        <button type="submit">Find Paradise</button>
+    </form>
+    <p id="result"></p>
+    <script src="app.js"></script>
+    <script>
+        // Dark mode toggle logic
+        const toggle = document.getElementById('darkModeToggle');
+        toggle.addEventListener('change', function () {
+            document.body.classList.toggle('dark-mode', this.checked);
+        });
+    </script>
+</body>
+
+</html>
