@@ -27,7 +27,9 @@ This repository contains the "Find Paradise" web application, a tool designed to
 
 ## Contact
 
-Repository maintained by GitHub user emen7.
+Repository maintained by GitHub user emen7;
+Find Paradise App design by David Neufer;
+A project of masteruniverse.org
 
 ## License
 
