@@ -157,7 +157,8 @@ function drawDirectionIndicator(azimuth, elevation) {
     const height = canvas.height;
     const centerX = width / 2;
     const centerY = height / 2;
-    const radius = Math.min(width, height) / 2.2; // Slightly smaller than canvas
+    // Make the circle slightly smaller to allow more space for text
+    const radius = Math.min(width, height) / 2.5; 
     
     // Clear canvas
     ctx.clearRect(0, 0, width, height);
@@ -183,9 +184,9 @@ function drawDirectionIndicator(azimuth, elevation) {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     
-    // 0° marks (left and right)
-    ctx.fillText("0°", centerX - radius - 15, centerY);
-    ctx.fillText("0°", centerX + radius + 15, centerY);
+    // 0° marks (left and right) - position further out
+    ctx.fillText("0°", centerX - radius - 20, centerY);
+    ctx.fillText("0°", centerX + radius + 20, centerY);
     
     // 90° marks (top and bottom)
     ctx.fillText("90°", centerX, centerY - radius - 15);
@@ -194,17 +195,17 @@ function drawDirectionIndicator(azimuth, elevation) {
     // Determine which side to show the compass direction
     const isWesterly = (azimuth >= 225 && azimuth <= 360) || (azimuth >= 0 && azimuth < 45);
     
-    // Display the compass direction - increase distance from edge and adjust positioning
+    // Display the compass direction - position much further from the edge
     ctx.font = '16px Roboto, sans-serif';
     ctx.textAlign = 'center';
     const compassDirection = getCompassDirection(azimuth);
     
     if (isWesterly) {
-        // Position westerly directions further left with more space
-        ctx.fillText(compassDirection, centerX - radius - 35, centerY - 20);
+        // Position westerly directions further left with much more space
+        ctx.fillText(compassDirection, centerX - radius - 50, centerY - 20);
     } else {
-        // Position easterly directions further right with more space
-        ctx.fillText(compassDirection, centerX + radius + 35, centerY - 20);
+        // Position easterly directions further right with much more space
+        ctx.fillText(compassDirection, centerX + radius + 50, centerY - 20);
     }
     
     // Calculate the position of the indicator line
@@ -223,14 +224,14 @@ function drawDirectionIndicator(azimuth, elevation) {
     ctx.lineWidth = 3;
     ctx.stroke();
     
-    // Draw the angle value at the end of the line - also move further out
-    ctx.fillStyle = '#ff2d55'; // Use accent color for the text
+    // Draw the angle value at the end of the line - move further out
+    ctx.fillStyle = '#ff2d55';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.font = '14px Roboto, sans-serif';
     ctx.fillText(`${Math.abs(elevation).toFixed(1)}°`, 
-        centerX + directionMultiplier * (radius + 30) * Math.cos(elevationRadians),
-        centerY + verticalMultiplier * (radius + 30) * Math.sin(elevationRadians));
+        centerX + directionMultiplier * (radius + 40) * Math.cos(elevationRadians),
+        centerY + verticalMultiplier * (radius + 40) * Math.sin(elevationRadians));
 }
 
 // Helper function to get compass direction from azimuth
