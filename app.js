@@ -64,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 <div class="result-section">
                     <strong>To Find Paradise:</strong> Face ${direction.compass} (${direction.azimuth.toFixed(2)}°) and look 
-                    ${direction.elevation > 0 ? 'up' : 'down'} ${Math.abs(direction.elevation).toFixed(2)}° 
+                    ${direction.isAboveHorizon ? 'up' : 'down'} ${direction.elevation.toFixed(2)}° 
                     from the horizon.
                 </div>
             `;
@@ -111,7 +111,16 @@ function calculateDirectionToParadise(lat, lng, datetime) {
     
     // Calculate altitude (elevation)
     const sinAlt = Math.sin(decRad) * Math.sin(latRad) + Math.cos(decRad) * Math.cos(latRad) * Math.cos(haRad);
-    const elevation = Math.asin(Math.max(-1, Math.min(1, sinAlt))) * 180 / Math.PI;
+    let elevation = Math.asin(Math.max(-1, Math.min(1, sinAlt))) * 180 / Math.PI;
+    
+    // Normalize elevation to be a positive value between 0 and 45 degrees
+    // First, get the absolute value (distance from horizon regardless of up/down)
+    const absElevation = Math.abs(elevation);
+    // Then cap at 45 degrees maximum
+    const normalizedElevation = Math.min(absElevation, 45);
+    
+    // Remember whether it was originally above or below horizon for display purposes
+    const isAboveHorizon = elevation > 0;
     
     // Calculate azimuth (from north, clockwise)
     const cosAz = (Math.sin(decRad) - Math.sin(latRad) * sinAlt) / (Math.cos(latRad) * Math.cos(Math.asin(sinAlt)));
@@ -130,7 +139,8 @@ function calculateDirectionToParadise(lat, lng, datetime) {
     
     return {
         azimuth: azimuth,
-        elevation: elevation,
+        elevation: normalizedElevation,
+        isAboveHorizon: isAboveHorizon,
         compass: compass
     };
 }
