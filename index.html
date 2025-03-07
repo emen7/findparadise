@@ -59,6 +59,21 @@
             /* Slightly lighter background for buttons */
         }
 
+        /* Add button sizing - more subtle enlargement */
+        #paradiseForm button {
+            font-size: 1.1em;
+            /* Increase button text size by 10% */
+            padding: 0.5em 1em;
+            margin-top: 0.5em;
+            margin-left: 1.5em;
+            /* Add some left margin to move button in from edge */
+        }
+
+        /* Add style for spacing in results */
+        .result-section {
+            margin-bottom: 1.5em;
+        }
+
         /* Add mobile responsiveness */
         @media (max-width: 600px) {
             body {
@@ -92,28 +107,15 @@
         <label for="location">Enter town or city:</label>
         <input type="text" id="location" name="location" required />
         <br><br>
-        <label for="datetime">Enter date & time:</label>
-        <input type="datetime-local" id="datetime" name="datetime" required />
-        <br><br>
-        <button type="submit">Find Paradise</button>
+        <!-- Removed datetime input -->
+        <button type="submit">Locate</button>
     </form>
     <p id="result"></p>
 
-    <!-- Modified dark mode toggle to be light mode toggle -->
-    <div id="toggleContainer" style="margin-top: 20px; font-size: 0.8rem;">
-        <label style="cursor:pointer;">
-            Light Mode: <input type="checkbox" id="darkModeToggle">
-        </label>
-    </div>
+    <!-- Removed Light Mode toggle -->
 
     <script src="app.js"></script>
-    <script>
-        // Modified toggle logic to enable light mode when checked
-        const toggle = document.getElementById('darkModeToggle');
-        toggle.addEventListener('change', function () {
-            document.body.classList.toggle('dark-mode', !this.checked);
-        });
-    </script>
+    <!-- Removed toggle logic script -->
 </body>
 
 </html>
