@@ -195,17 +195,17 @@ function drawDirectionIndicator(azimuth, elevation) {
     // Determine which side to show the compass direction
     const isWesterly = (azimuth >= 225 && azimuth <= 360) || (azimuth >= 0 && azimuth < 45);
     
-    // Display the compass direction - position much further from the edge
+    // Display the compass direction - position even further from the edge
     ctx.font = '16px Roboto, sans-serif';
     ctx.textAlign = 'center';
     const compassDirection = getCompassDirection(azimuth);
     
     if (isWesterly) {
-        // Position westerly directions further left with much more space
-        ctx.fillText(compassDirection, centerX - radius - 50, centerY - 20);
+        // Position westerly directions further left with even more space (60px instead of 50px)
+        ctx.fillText(compassDirection, centerX - radius - 60, centerY - 20);
     } else {
-        // Position easterly directions further right with much more space
-        ctx.fillText(compassDirection, centerX + radius + 50, centerY - 20);
+        // Position easterly directions further right with even more space
+        ctx.fillText(compassDirection, centerX + radius + 60, centerY - 20);
     }
     
     // Calculate the position of the indicator line
