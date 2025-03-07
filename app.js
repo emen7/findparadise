@@ -201,8 +201,8 @@ function drawDirectionIndicator(azimuth, elevation) {
     const compassDirection = getCompassDirection(azimuth);
     
     if (isWesterly) {
-        // Position westerly directions even further left (70px instead of 60px)
-        ctx.fillText(compassDirection, centerX - radius - 70, centerY - 20);
+        // Position westerly directions closer to the circle
+        ctx.fillText(compassDirection, centerX - radius - 40, centerY - 20);
     } else {
         // Position easterly directions further right with more space
         ctx.fillText(compassDirection, centerX + radius + 60, centerY - 20);
