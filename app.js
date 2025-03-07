@@ -55,11 +55,11 @@ document.addEventListener('DOMContentLoaded', () => {
             
             resultDiv.innerHTML = `
                 <div class="result-section">
-                    <strong>Location:</strong> ${data.results[0].formatted}
+                    <strong>From Location:</strong> ${data.results[0].formatted}
                 </div>
                 
                 <div class="result-section">
-                    <strong>Local Time:</strong> ${timeString}
+                    <strong>At Local Time:</strong> ${timeString}
                 </div>
                 
                 <div class="result-section">
