@@ -7,7 +7,6 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         
         const location = document.getElementById('location').value;
-        const datetime = document.getElementById('datetime').value;
         
         resultDiv.innerHTML = 'Calculating direction to Paradise...';
         
@@ -28,18 +27,39 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const coordinates = data.results[0].geometry;
             
-            // Calculate direction to Paradise (using SgrA* as reference)
-            const direction = calculateDirectionToParadise(coordinates.lat, coordinates.lng, datetime);
+            // Get current date/time
+            const now = new Date();
+            
+            // Use timezone from API if available
+            let localTime = now;
+            if (data.results[0].annotations && data.results[0].annotations.timezone) {
+                // Get timezone offset in minutes
+                const tzOffset = data.results[0].annotations.timezone.offset_sec / 60;
+                // Get user's local offset in minutes
+                const localOffset = now.getTimezoneOffset();
+                // Apply the difference to adjust for the location's timezone
+                localTime = new Date(now.getTime() + (localOffset + tzOffset) * 60000);
+            }
+            
+            // Calculate direction to Paradise using the local time at the searched location
+            const direction = calculateDirectionToParadise(coordinates.lat, coordinates.lng, localTime);
+            
+            const timeString = localTime.toLocaleString(undefined, {
+                weekday: 'short', 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
             
             resultDiv.innerHTML = `
                 <strong>Location:</strong> ${data.results[0].formatted}<br>
+                <strong>Local Time:</strong> ${timeString}<br>
                 <strong>To Find Paradise:</strong> Face ${direction.compass} (${direction.azimuth.toFixed(2)}°) and look 
                 ${direction.elevation > 0 ? 'up' : 'down'} ${Math.abs(direction.elevation).toFixed(2)}° 
                 from the horizon.
             `;
-            
-            // Removing abandoned canvas drawing code
-            
         } catch (error) {
             console.error('Error:', error);
             resultDiv.innerHTML = 'Error calculating direction. Please try again.';
