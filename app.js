@@ -38,11 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 from the horizon.
             `;
             
-            // Draw the visual angle representation if we have a canvas
-            const canvas = document.getElementById('angleClock');
-            if (canvas && typeof drawClock === 'function') {
-                drawClock(direction.elevation);
-            }
+            // Removing abandoned canvas drawing code
             
         } catch (error) {
             console.error('Error:', error);
