@@ -48,9 +48,15 @@
             color: #e0e0e0;
         }
 
-        .dark-mode h1,
+        .dark-mode h1 {
+            color: rgb(182, 179, 179);
+        }
+
         .dark-mode button {
-            color: rgb(131, 129, 129);
+            color: #b9babb;
+            /* Make button text white for better visibility */
+            background-color: #444444;
+            /* Slightly lighter background for buttons */
         }
 
         /* Add mobile responsiveness */
@@ -81,11 +87,6 @@
 </head>
 
 <body>
-    <div id="toggleContainer" style="position:absolute; top:10px; left:10px;">
-        <label style="cursor:pointer;">
-            Dark Mode: <input type="checkbox" id="darkModeToggle">
-        </label>
-    </div>
     <h1><br>Find Paradise</h1>
     <form id="paradiseForm">
         <label for="location">Enter your location:</label>
@@ -97,6 +98,14 @@
         <button type="submit">Find Paradise</button>
     </form>
     <p id="result"></p>
+
+    <!-- Moved dark mode toggle below results and removed absolute positioning -->
+    <div id="toggleContainer" style="margin-top: 20px; font-size: 0.8rem;">
+        <label style="cursor:pointer;">
+            Dark Mode: <input type="checkbox" id="darkModeToggle">
+        </label>
+    </div>
+
     <script src="app.js"></script>
     <script>
         // Dark mode toggle logic
