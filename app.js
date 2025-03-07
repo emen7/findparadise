@@ -232,7 +232,7 @@ function drawDirectionIndicator(azimuth, elevation) {
     ctx.fillStyle = '#FFA500'; // Orange
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font = '14px Roboto, sans-serif';
+    ctx.font = '16px Roboto, sans-serif'; // Increased from 14px to match direction text size
     
     // Calculate text position with padding to prevent cutoff
     let textX = centerX + directionMultiplier * (radius + 40) * Math.cos(elevationRadians);
