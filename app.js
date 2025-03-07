@@ -195,9 +195,10 @@ function drawDirectionIndicator(azimuth, elevation) {
     // Determine which side to show the compass direction
     const isWesterly = (azimuth >= 225 && azimuth <= 360) || (azimuth >= 0 && azimuth < 45);
     
-    // Display the compass direction - position even further from the edge
+    // Display the compass direction - change color to orange
     ctx.font = '16px Roboto, sans-serif';
     ctx.textAlign = 'center';
+    ctx.fillStyle = '#FFA500'; // Change to orange
     const compassDirection = getCompassDirection(azimuth);
     
     if (isWesterly) {
@@ -208,6 +209,9 @@ function drawDirectionIndicator(azimuth, elevation) {
         ctx.fillText(compassDirection, centerX + radius + 60, centerY - 20);
     }
     
+    // Reset fill color for other elements
+    ctx.fillStyle = '#a9a9aa';
+    
     // Calculate the position of the indicator line
     const elevationRadians = Math.abs(elevation) * Math.PI / 180;
     const directionMultiplier = isWesterly ? -1 : 1; // Left or right side
@@ -216,16 +220,16 @@ function drawDirectionIndicator(azimuth, elevation) {
     const indicatorEndX = centerX + directionMultiplier * radius * Math.cos(elevationRadians);
     const indicatorEndY = centerY + verticalMultiplier * radius * Math.sin(elevationRadians);
     
-    // Draw the indicator line
+    // Draw the indicator line - change to yellow
     ctx.beginPath();
     ctx.moveTo(centerX, centerY);
     ctx.lineTo(indicatorEndX, indicatorEndY);
-    ctx.strokeStyle = '#0078D7'; // Change from red (#ff2d55) to azure blue
+    ctx.strokeStyle = '#FFFF00'; // Change from blue to yellow
     ctx.lineWidth = 3;
     ctx.stroke();
     
-    // Draw the angle value at the end of the line - also change to azure blue
-    ctx.fillStyle = '#0078D7'; // Change from red to azure blue
+    // Draw the angle value at the end of the line - change to orange
+    ctx.fillStyle = '#FFA500'; // Change from blue to orange
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.font = '14px Roboto, sans-serif';
