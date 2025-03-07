@@ -33,8 +33,9 @@ document.addEventListener('DOMContentLoaded', () => {
             
             resultDiv.innerHTML = `
                 <strong>Location:</strong> ${data.results[0].formatted}<br>
-                <strong>Direction to Paradise:</strong> ${direction.compass} (${direction.azimuth.toFixed(2)}°)<br>
-                <strong>Elevation:</strong> ${direction.elevation.toFixed(2)}° ${direction.elevation > 0 ? 'above' : 'below'} horizon
+                <strong>To Find Paradise:</strong> Face ${direction.compass} (${direction.azimuth.toFixed(2)}°) and look 
+                ${direction.elevation > 0 ? 'up' : 'down'} ${Math.abs(direction.elevation).toFixed(2)}° 
+                from the horizon.
             `;
             
             // Draw the visual angle representation if we have a canvas
@@ -60,33 +61,45 @@ function calculateDirectionToParadise(lat, lng, datetime) {
     // Parse the datetime input
     const date = new Date(datetime);
     
+    // Calculate days since J2000
+    const j2000 = new Date(Date.UTC(2000, 0, 1, 12, 0, 0));
+    const daysSinceJ2000 = (date - j2000) / (1000 * 60 * 60 * 24);
+    
+    // Calculate Greenwich Mean Sidereal Time (GMST)
+    const T = daysSinceJ2000 / 36525;
+    let gmstHours = 6.697374558 + 0.06570982441908 * daysSinceJ2000 + 1.00273790935 * (date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600);
+    gmstHours = gmstHours % 24;
+    if (gmstHours < 0) gmstHours += 24;
+    
     // Calculate Local Sidereal Time (LST)
-    const utc = date.getTime() / 86400000 + 2440587.5; // Convert to Julian Date
-    const jd2000 = 2451545.0;
-    const t = (utc - jd2000) / 36525;
-    const gmst = (280.46061837 + 360.98564736629 * (utc - jd2000) + 0.000387933 * t * t - t * t * t / 38710000.0) % 360;
-    const lst = (gmst + lng) % 360;
+    let lstHours = gmstHours + lng / 15;
+    lstHours = lstHours % 24;
+    if (lstHours < 0) lstHours += 24;
     
-    // Calculate hour angle in degrees
-    const hourAngle = (lst - SgrA.ra + 360) % 360;
+    // Calculate hour angle in hours
+    let haHours = lstHours - SgrA.ra / 15;
+    if (haHours < -12) haHours += 24;
+    if (haHours > 12) haHours -= 24;
     
-    // Convert degrees to radians
+    // Convert to radians
     const latRad = lat * Math.PI / 180;
     const decRad = SgrA.dec * Math.PI / 180;
-    const haRad = hourAngle * Math.PI / 180;
+    const haRad = haHours * 15 * Math.PI / 180;
     
     // Calculate altitude (elevation)
     const sinAlt = Math.sin(latRad) * Math.sin(decRad) + Math.cos(latRad) * Math.cos(decRad) * Math.cos(haRad);
     const elevation = Math.asin(sinAlt) * 180 / Math.PI;
     
-    // Calculate azimuth
-    let cosAz = (Math.sin(decRad) - Math.sin(latRad) * sinAlt) / (Math.cos(latRad) * Math.cos(Math.asin(sinAlt)));
-    cosAz = Math.max(-1, Math.min(1, cosAz)); // Clamp to valid range
+    // Calculate azimuth - measured from North
+    let sinA = Math.sin(haRad) * Math.cos(decRad) / Math.cos(Math.asin(sinAlt));
+    let cosA = (Math.sin(decRad) - Math.sin(latRad) * sinAlt) / (Math.cos(latRad) * Math.cos(Math.asin(sinAlt)));
     
-    let azimuth = Math.acos(cosAz) * 180 / Math.PI;
-    if (Math.sin(haRad) > 0) {
-        azimuth = 360 - azimuth;
-    }
+    // Handle potential numerical errors
+    sinA = Math.max(-1, Math.min(1, sinA));
+    cosA = Math.max(-1, Math.min(1, cosA));
+    
+    let azimuth = Math.atan2(sinA, cosA) * 180 / Math.PI;
+    if (azimuth < 0) azimuth += 360;
     
     // Convert azimuth to compass direction
     const compassDirections = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 
