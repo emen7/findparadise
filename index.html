@@ -112,9 +112,12 @@
     </form>
     <p id="result"></p>
 
-    <!-- Canvas with left-aligned positioning -->
-    <canvas id="directionIndicator" width="400" height="320"
-        style="display: none; margin: 20px 20% 20px 10%; max-width: 100%;"></canvas>
+    <!-- Add container div for canvas to help with centering -->
+    <div style="display: flex; justify-content: center; width: 100%;">
+        <!-- Remove the asymmetric margin and use auto horizontal margin for responsive centering -->
+        <canvas id="directionIndicator" width="400" height="320"
+            style="display: none; margin: 20px auto; max-width: 100%;"></canvas>
+    </div>
 
     <script src="app.js"></script>
     <!-- Removed toggle logic script -->

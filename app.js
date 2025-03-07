@@ -228,14 +228,24 @@ function drawDirectionIndicator(azimuth, elevation) {
     ctx.lineWidth = 3;
     ctx.stroke();
     
-    // Draw the angle value at the end of the line - change to orange
-    ctx.fillStyle = '#FFA500'; // Change from blue to orange
+    // Draw the angle value at the end of the line - prevent edge cutoff
+    ctx.fillStyle = '#FFA500'; // Orange
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.font = '14px Roboto, sans-serif';
-    ctx.fillText(`${Math.abs(elevation).toFixed(1)}°`, 
-        centerX + directionMultiplier * (radius + 40) * Math.cos(elevationRadians),
-        centerY + verticalMultiplier * (radius + 40) * Math.sin(elevationRadians));
+    
+    // Calculate text position with padding to prevent cutoff
+    let textX = centerX + directionMultiplier * (radius + 40) * Math.cos(elevationRadians);
+    let textY = centerY + verticalMultiplier * (radius + 40) * Math.sin(elevationRadians);
+    
+    // Add padding to ensure text stays within canvas boundaries
+    const padding = 20;
+    if (textX < padding) textX = padding;
+    if (textX > width - padding) textX = width - padding;
+    if (textY < padding) textY = padding;
+    if (textY > height - padding) textY = height - padding;
+    
+    ctx.fillText(`${Math.abs(elevation).toFixed(1)}°`, textX, textY);
 }
 
 // Helper function to get compass direction from azimuth
