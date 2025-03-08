@@ -79,66 +79,71 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function calculateDirectionToParadise(lat, lng, datetime) {
-	// Galactic Center (GC) coordinates (J2000)
-	const GC = {
-		ra: 266.41683, // degrees (17h 45m 40.04s)
-		dec: -29.00781 // degrees (-29° 0' 28.1")
-	};
-	
-	// Parse input date (assumed UTC, already adjusted via opencage if needed)
-	const date = new Date(datetime);
-	// Compute Julian Date
-	const jd = (date.getTime() / 86400000) + 2440587.5;
-	
-	// Compute GMST (in hours) using a standard formula:
-	// GMST_hours = 18.697374558 + 24.06570982441908 * (JD - 2451545.0)
-	const gmstHours = 18.697374558 + 24.06570982441908 * (jd - 2451545.0);
-	// Normalize to 0–24
-	const gmstNormalized = ((gmstHours % 24) + 24) % 24;
-	
-	// Convert GMST to degrees
-	const gmstDeg = gmstNormalized * 15;
-	
-	// Local Sidereal Time (LST) in degrees
-	const lst = (gmstDeg + lng) % 360;
-	
-	// Hour angle (HA): HA = LST - GC.ra
-	let ha = lst - GC.ra;
-	if (ha < -180) ha += 360;
-	if (ha > 180) ha -= 360;
-	
-	// Convert observer latitude, GC declination, and hour angle to radians
-	const latRad = lat * Math.PI / 180;
-	const decRad = GC.dec * Math.PI / 180;
-	const haRad = ha * Math.PI / 180;
-	
-	// Altitude (elevation) using standard formula:
-	// alt = arcsin( sin(dec)*sin(lat) + cos(dec)*cos(lat)*cos(HA) )
-	const sinAlt = Math.sin(decRad) * Math.sin(latRad) + Math.cos(decRad) * Math.cos(latRad) * Math.cos(haRad);
-	const altitude = Math.asin(Math.max(-1, Math.min(1, sinAlt))) * 180 / Math.PI;
-	
-	// Azimuth using horizontal coordinate conversion:
-	// az = arctan2( sin(HA), cos(HA)*sin(lat) - tan(dec)*cos(lat) )
-	let azRad = Math.atan2(Math.sin(haRad), Math.cos(haRad) * Math.sin(latRad) - Math.tan(decRad) * Math.cos(latRad));
-	let az = (azRad * 180 / Math.PI + 360) % 360;
-	
-	// Debug logging 
-	console.log(`JD: ${jd.toFixed(3)}, GMST: ${gmstDeg.toFixed(2)}°, LST: ${lst.toFixed(2)}°`);
-	console.log(`HA: ${ha.toFixed(2)}°, Alt: ${altitude.toFixed(2)}°, Az: ${az.toFixed(2)}°`);
-	
-	const isAboveHorizon = altitude > 0;
-	
-	const compassDirections = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 
-	                           'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
-	const compassIndex = Math.floor(((az + 11.25) % 360) / 22.5);
-	const compass = compassDirections[compassIndex];
-	
-	return {
-		azimuth: az,
-		elevation: Math.abs(altitude),
-		isAboveHorizon: isAboveHorizon,
-		compass: compass
-	};
+    // SgrA* coordinates (Galactic Center)
+    const GC = {
+        ra: 266.41683, // Right Ascension in degrees (17h 45m 40.04s)
+        dec: -29.00781 // Declination in degrees (-29° 0' 28.1")
+    };
+    
+    // Parse the datetime input
+    const date = new Date(datetime);
+    
+    // Calculate Julian Date
+    const jd = (date.getTime() / 86400000.0) + 2440587.5;
+    
+    // Calculate GMST in degrees
+    const jd0 = Math.floor(jd - 0.5) + 0.5;
+    const t = (jd0 - 2451545.0) / 36525.0;
+    const ut = ((jd + 0.5) % 1.0) * 24.0;
+    let gmst = 280.46061837 + 360.98564736629 * (jd0 - 2451545.0) + 0.000387933 * t * t - t * t * t / 38710000.0;
+    gmst = (gmst + ut * 15.04107) % 360;
+    if (gmst < 0) gmst += 360;
+    
+    // Calculate local sidereal time in degrees
+    const lst = (gmst + lng) % 360;
+    
+    // Calculate hour angle in degrees
+    let ha = lst - GC.ra;
+    if (ha < -180) ha += 360;
+    if (ha > 180) ha -= 360;
+    
+    // Convert angles to radians
+    const latRad = lat * Math.PI / 180;
+    const decRad = GC.dec * Math.PI / 180;
+    const haRad = ha * Math.PI / 180;
+    
+    // Calculate altitude (elevation)
+    const sinAlt = Math.sin(decRad) * Math.sin(latRad) + Math.cos(decRad) * Math.cos(latRad) * Math.cos(haRad);
+    const alt = Math.asin(Math.max(-1, Math.min(1, sinAlt))) * 180 / Math.PI;
+    
+    // Calculate azimuth using standard horizontal coordinate conversion:
+    // az = arctan2( sin(HA), cos(HA)*sin(lat) - tan(dec)*cos(lat) )
+    let azRad = Math.atan2(Math.sin(haRad), Math.cos(haRad) * Math.sin(latRad) - Math.tan(decRad) * Math.cos(latRad));
+    let az = (azRad * 180 / Math.PI + 360) % 360;
+    
+    // If the galactic center is below the horizon, flip the azimuth by 180°
+    let displayAz = az;
+    if (alt < 0) {
+        displayAz = (az + 180) % 360;
+    }
+    
+    console.log(`Location: ${lat.toFixed(2)}°, ${lng.toFixed(2)}°, HA: ${ha.toFixed(2)}°`);
+    console.log(`Altitude: ${alt.toFixed(2)}°, Display Azimuth: ${displayAz.toFixed(2)}°`);
+    
+    const isAboveHorizon = alt > 0;
+    
+    // Convert display azimuth to compass direction
+    const compassDirections = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE',
+                               'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+    const compassIndex = Math.floor(((displayAz + 11.25) % 360) / 22.5);
+    const compass = compassDirections[compassIndex];
+    
+    return {
+        azimuth: displayAz,
+        elevation: Math.abs(alt),
+        isAboveHorizon: isAboveHorizon,
+        compass: compass
+    };
 }
 
 // Function to draw the direction and elevation indicator
