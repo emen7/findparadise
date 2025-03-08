@@ -128,12 +128,13 @@ function calculateDirectionToParadise(lat, lng, datetime) {
     const sinAlt = Math.sin(decRad) * Math.sin(latRad) + Math.cos(decRad) * Math.cos(latRad) * Math.cos(haRad);
     const elevation = Math.asin(Math.max(-1, Math.min(1, sinAlt))) * 180 / Math.PI;
     
-    // Calculate azimuth with refined formula
-    const sinAz = Math.sin(haRad) * Math.cos(decRad) / Math.cos(Math.asin(sinAlt));
-    const cosAz = (Math.sin(decRad) - Math.sin(latRad) * sinAlt) / (Math.cos(latRad) * Math.cos(Math.asin(sinAlt)));
+    // Fix azimuth calculation - correct formula with proper quadrant handling
+    // This is the standard astronomical formula for azimuth from north through east
+    let y = -Math.sin(haRad);
+    let x = Math.tan(decRad) * Math.cos(latRad) - Math.sin(latRad) * Math.cos(haRad);
+    let azimuth = Math.atan2(y, x) * 180 / Math.PI;
     
-    // Use atan2 for more accurate quadrant determination
-    let azimuth = Math.atan2(sinAz, cosAz) * 180 / Math.PI;
+    // Convert to 0-360 range
     azimuth = (azimuth + 360) % 360;
     
     // Account for atmospheric refraction near horizon
