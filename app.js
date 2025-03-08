@@ -79,90 +79,85 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function calculateDirectionToParadise(lat, lng, datetime) {
-    // More accurate SgrA* (Galactic Center) coordinates - J2000 epoch
+    // SgrA* coordinates - J2000 epoch
     const SgrA = {
-        ra: 266.4168, // Updated RA in degrees (17h 45m 40.04s)
-        dec: -29.0078 // Updated Dec in degrees (-29° 00' 28.1")
+        ra: 266.4168, // Right Ascension in degrees (17h 45m 40.04s)
+        dec: -29.0078 // Declination in degrees (-29° 00' 28.1")
     };
     
     // Parse the datetime input
     const date = new Date(datetime);
     
-    // Calculate Julian Date with more precision
-    const jd = (date.getTime() / 86400000.0) + 2440587.5;
+    // Calculate Julian date more accurately
+    const year = date.getUTCFullYear();
+    const month = date.getUTCMonth() + 1;
+    const day = date.getUTCDate();
+    const hour = date.getUTCHours();
+    const minute = date.getUTCMinutes();
+    const second = date.getUTCSeconds();
     
-    // Calculate time in Julian centuries since J2000.0
+    // Calculate Julian Date using Meeus algorithm
+    let jd;
+    if (month <= 2) {
+        jd = Math.floor(365.25 * (year - 1)) + Math.floor(30.6001 * (month + 12)) + day + 1720981.5;
+    } else {
+        jd = Math.floor(365.25 * year) + Math.floor(30.6001 * (month + 1)) + day + 1720981.5;
+    }
+    jd += (hour + minute/60 + second/3600) / 24.0;
+    
+    // Calculate GST using more accurate formula
     const T = (jd - 2451545.0) / 36525;
+    const T0 = 6.697374558 + (2400.051336 * T) + (0.000025862 * T * T);
+    let GST = T0;
     
-    // Apply precession correction to coordinates (Simplified precession model)
-    const precessionRate = 0.0139; // degrees per year (simplified average)
-    const yearsSinceJ2000 = T * 100;
-    let correctedRA = SgrA.ra + precessionRate * yearsSinceJ2000;
-    correctedRA = correctedRA % 360;
+    // Convert to degrees and add the rotation for the current time
+    GST = (GST * 15 + 15 * (hour + minute/60 + second/3600) * 1.002737909) % 360;
+    if (GST < 0) GST += 360;
     
-    // Calculate GMST with higher precision formula
-    // Meeus, Astronomical Algorithms, 2nd ed, Chapter 12
-    let gmst = 280.46061837 + 360.98564736629 * (jd - 2451545.0);
-    gmst += 0.000387933 * T * T - T * T * T / 38710000.0;
+    // Calculate Local Sidereal Time
+    let LST = (GST + lng) % 360;
+    if (LST < 0) LST += 360;
     
-    // Add contribution from UT hours
-    const dayFraction = (date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600) / 24;
-    gmst += dayFraction * 360.0 * 1.00273781191135448;
-    gmst = gmst % 360;
-    if (gmst < 0) gmst += 360;
-    
-    // Calculate local sidereal time in degrees
-    const lst = (gmst + lng) % 360;
-    
-    // Calculate hour angle with corrected RA
-    let ha = lst - correctedRA;
-    if (ha < -180) ha += 360;
-    if (ha > 180) ha -= 360;
+    // Calculate hour angle
+    let HA = LST - SgrA.ra;
+    if (HA < -180) HA += 360;
+    if (HA > 180) HA -= 360;
     
     // Convert to radians
     const latRad = lat * Math.PI / 180;
     const decRad = SgrA.dec * Math.PI / 180;
-    const haRad = ha * Math.PI / 180;
+    const HArad = HA * Math.PI / 180;
     
-    // Calculate altitude (elevation) - refined formula
-    const sinAlt = Math.sin(decRad) * Math.sin(latRad) + Math.cos(decRad) * Math.cos(latRad) * Math.cos(haRad);
-    const elevation = Math.asin(Math.max(-1, Math.min(1, sinAlt))) * 180 / Math.PI;
+    // Calculate altitude using the standard formula
+    const sinAlt = Math.sin(decRad) * Math.sin(latRad) + Math.cos(decRad) * Math.cos(latRad) * Math.cos(HArad);
+    const alt = Math.asin(Math.max(-1, Math.min(1, sinAlt))) * 180 / Math.PI;
     
-    // Fix azimuth calculation - correct formula with proper quadrant handling
-    // This is the standard astronomical formula for azimuth from north through east
-    let y = -Math.sin(haRad);
-    let x = Math.tan(decRad) * Math.cos(latRad) - Math.sin(latRad) * Math.cos(haRad);
-    let azimuth = Math.atan2(y, x) * 180 / Math.PI;
+    // Calculate azimuth using the standard formula - NOTE N=0, E=90, S=180, W=270
+    const cosAz = (Math.sin(decRad) - Math.sin(latRad) * sinAlt) / (Math.cos(latRad) * Math.cos(Math.asin(sinAlt)));
+    let az = Math.acos(Math.max(-1, Math.min(1, cosAz))) * 180 / Math.PI;
     
-    // Convert to 0-360 range
-    azimuth = (azimuth + 360) % 360;
-    
-    // Account for atmospheric refraction near horizon
-    let correctedElevation = elevation;
-    if (elevation < 10) {
-        // Simplified refraction correction formula
-        const R = 1.02 / Math.tan((elevation + 10.3 / (elevation + 5.11)) * Math.PI / 180);
-        correctedElevation = elevation + R / 60; // R is in arcminutes, convert to degrees
+    // Adjust azimuth based on hour angle
+    if (Math.sin(HArad) > 0) {
+        az = 360 - az;
     }
     
-    // Other calculations remain the same
-    const isAboveHorizon = correctedElevation > 0;
-    const absElevation = Math.abs(correctedElevation);
+    const isAboveHorizon = alt > 0;
     
-    // Convert to compass direction - same as before
+    // Extra logging to diagnose issues
+    console.log(`Time UTC: ${date.toUTCString()}, JD: ${jd.toFixed(5)}`);
+    console.log(`GST: ${GST.toFixed(4)}°, LST: ${LST.toFixed(4)}°, HA: ${HA.toFixed(4)}°`);
+    console.log(`Alt: ${alt.toFixed(2)}°, Az: ${az.toFixed(2)}°`);
+    
+    // Convert azimuth to compass direction
     const compassDirections = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 
                               'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
-    const compassIndex = Math.floor(((azimuth + 11.25) % 360) / 22.5);
-    const compass = compassDirections[compassIndex];
-    
-    console.log(`Location: ${lat}, ${lng}, Corrected RA: ${correctedRA.toFixed(4)}, LST: ${lst.toFixed(4)}`);
-    console.log(`Elevation: ${elevation.toFixed(2)}, Corrected: ${correctedElevation.toFixed(2)}, Azimuth: ${azimuth.toFixed(2)}`);
+    const compassIndex = Math.floor(((az + 11.25) % 360) / 22.5);
     
     return {
-        azimuth: azimuth,
-        elevation: absElevation,
+        azimuth: az,
+        elevation: Math.abs(alt),
         isAboveHorizon: isAboveHorizon,
-        compass: compass
+        compass: compassDirections[compassIndex]
     };
 }
 
