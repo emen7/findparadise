@@ -64,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             resultDiv.innerHTML = `
                 <div class="result-section">
-                    <strong>From Location:</strong> ${data.results[0].formatted}
+                    <strong>From Location:</strong> ${formatShortLocation(data.results[0])}
                 </div>
                 
                 <div class="result-section">
@@ -163,6 +163,60 @@ function calculateDirectionToParadise(lat, lng, datetime) {
         isAboveHorizon: isAboveHorizon,
         compass: compass
     };
+}
+
+function formatShortLocation(geocodeResult) {
+    if (!geocodeResult || !geocodeResult.components) {
+        return geocodeResult.formatted || "Unknown location";
+    }
+    
+    const components = geocodeResult.components;
+    
+    // Get the city/town name - check various possible fields
+    let locality = components.city || components.town || components.village || 
+                   components.hamlet || components.suburb || components.neighbourhood;
+    
+    // Get the state/province if available
+    let region = components.state || components.province || components.state_code;
+    
+    // Get country and abbreviate it
+    let country = "";
+    if (components.country_code) {
+        // Convert country code to uppercase
+        country = components.country_code.toUpperCase();
+    } else if (components.country) {
+        // Abbreviate countries with common abbreviations
+        const countries = {
+            "United States": "USA",
+            "United States of America": "USA",
+            "United Kingdom": "UK",
+            "Australia": "AUS",
+            "Canada": "CAN",
+            "Germany": "DE",
+            "France": "FR",
+            "Italy": "IT",
+            "Spain": "ES",
+            "Japan": "JP",
+            "China": "CN",
+            "Russia": "RU",
+            "India": "IN",
+            "Brazil": "BR"
+        };
+        country = countries[components.country] || components.country;
+    }
+    
+    // Build the short location string
+    let result = locality || "";
+    if (region && region !== locality) {
+        if (result) result += ", ";
+        result += region;
+    }
+    if (country) {
+        if (result) result += ", ";
+        result += country;
+    }
+    
+    return result || geocodeResult.formatted || "Unknown location";
 }
 
 // Function to draw the direction and elevation indicator
