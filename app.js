@@ -27,41 +27,91 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const coordinates = data.results[0].geometry;
             
-            // Get current date/time
-            const now = new Date();
+            // Get current date/time in UTC
+            const nowUTC = new Date();
             
-            // FIXED: Improved timezone handling to prevent 12-hour offset issues
-            let localTime = now;
+            // Debug the date/time handling extensively
+            console.log("Starting time calculations:");
+            console.log("UTC time:", nowUTC.toUTCString());
+            console.log("Local time:", nowUTC.toString());
+            
+            // Get location info
+            let locationInfo = "";
+            let localTime = nowUTC;
+            
             if (data.results[0].annotations && data.results[0].annotations.timezone) {
-                console.log("Location timezone:", data.results[0].annotations.timezone);
-                console.log("Local device time:", now.toString());
+                const tzInfo = data.results[0].annotations.timezone;
+                locationInfo = `${data.results[0].formatted} (${tzInfo.name}, UTC${tzInfo.offset_string})`;
                 
-                // Get timezone information from the API
-                const tzOffsetSec = data.results[0].annotations.timezone.offset_sec;
-                const tzName = data.results[0].annotations.timezone.name;
+                // Extract the raw components
+                const tzOffsetHours = tzInfo.offset_sec / 3600;
                 
-                // Create a time string in ISO format but specifying the target timezone
-                const isoString = now.toISOString();
+                // Log all timezone details for debugging
+                console.log("Target timezone details:", {
+                    name: tzInfo.name,
+                    offset_string: tzInfo.offset_string,
+                    offset_sec: tzInfo.offset_sec,
+                    offset_hours: tzOffsetHours
+                });
                 
-                // Calculate target timezone time directly using the offset in seconds
-                const targetTime = new Date(now.getTime() + (tzOffsetSec * 1000) + (now.getTimezoneOffset() * 60000));
-                localTime = targetTime;
+                // Create a new date using explicit year/month/day/hour from the target timezone
+                // This avoids all timezone conversion issues by building the time from scratch
+                const userLocalDate = new Date();
                 
-                console.log("Calculated location time:", localTime.toString());
-                console.log("Hour difference:", (localTime.getHours() - now.getHours()));
+                // Current UTC hour
+                const utcHour = userLocalDate.getUTCHours();
+                const utcMinutes = userLocalDate.getUTCMinutes();
+                
+                // Calculate target location hour directly from UTC + offset
+                let targetHour = (utcHour + tzOffsetHours) % 24;
+                if (targetHour < 0) targetHour += 24;
+                
+                // Force create a Date object with the correct hour
+                localTime = new Date(Date.UTC(
+                    userLocalDate.getUTCFullYear(),
+                    userLocalDate.getUTCMonth(),
+                    userLocalDate.getUTCDate(),
+                    targetHour,
+                    utcMinutes,
+                    0
+                ));
+                
+                console.log("UTC components:", {
+                    year: userLocalDate.getUTCFullYear(),
+                    month: userLocalDate.getUTCMonth(),
+                    date: userLocalDate.getUTCDate(),
+                    hours: utcHour,
+                    minutes: utcMinutes
+                });
+                
+                console.log("Target location hour calculation:", {
+                    utcHour: utcHour,
+                    tzOffsetHours: tzOffsetHours,
+                    calculatedHour: targetHour,
+                });
+                
+                console.log("TARGET LOCATION TIME:", localTime.toUTCString());
+                
+                // Also log 12 hours forward/backward to see alternatives
+                const plus12 = new Date(localTime.getTime() + 12*60*60*1000);
+                const minus12 = new Date(localTime.getTime() - 12*60*60*1000);
+                console.log("TARGET +12h:", plus12.toUTCString());
+                console.log("TARGET -12h:", minus12.toUTCString());
             }
             
-            // Calculate direction to Paradise using the local time at the searched location
-            const direction = calculateDirectionToParadise(coordinates.lat, coordinates.lng, localTime);
+            // Calculate direction to Paradise using the timestamp
+            const direction = calculateDirectionToParadise(coordinates.lat, coordinates.lng, localTime.getTime());
             
-            const timeString = localTime.toLocaleString(undefined, {
-                weekday: 'short', 
-                year: 'numeric', 
-                month: 'short', 
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
+            // Format time using UTC methods to avoid browser timezone interference
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            
+            let hours = localTime.getUTCHours();
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12; // the hour '0' should be '12'
+            
+            const timeString = `${days[localTime.getUTCDay()]}, ${months[localTime.getUTCMonth()]} ${localTime.getUTCDate()}, ${localTime.getUTCFullYear()}, ${hours}:${String(localTime.getUTCMinutes()).padStart(2, '0')} ${ampm}`;
             
             resultDiv.innerHTML = `
                 <div class="result-section">
@@ -88,7 +138,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-function calculateDirectionToParadise(lat, lng, datetime) {
+function calculateDirectionToParadise(lat, lng, timestamp) {
+    // Use timestamp instead of Date object to avoid timezone issues
+    const date = new Date(timestamp);
+    
+    // Log date components for debugging
+    console.log("Calculation inputs:", {
+        lat: lat,
+        lng: lng,
+        timestamp: timestamp,
+        dateObject: date.toUTCString(),
+        dateComponents: {
+            UTCFullYear: date.getUTCFullYear(),
+            UTCMonth: date.getUTCMonth(),
+            UTCDate: date.getUTCDate(),
+            UTCHours: date.getUTCHours(),
+            UTCMinutes: date.getUTCMinutes()
+        }
+    });
+    
     // Normalize longitude to the range [-180, 180]
     if (lng > 180) {
         lng -= 360;
@@ -100,9 +168,6 @@ function calculateDirectionToParadise(lat, lng, datetime) {
         ra: 266.41683, // degrees (17h 45m 40.04s)
         dec: -29.00781 // degrees (-29° 0' 28.1")
     };
-    
-    // Parse the datetime input
-    const date = new Date(datetime);
     
     // Calculate Julian Date
     const jd = (date.getTime() / 86400000.0) + 2440587.5;
