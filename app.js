@@ -362,6 +362,33 @@ function drawDirectionIndicator(azimuth, elevation) {
     ctx.lineWidth = 3;
     ctx.stroke();
     
+    // Add an arrowhead pointing toward the circle
+    // Calculate the angle of the line for rotation
+    const arrowAngle = Math.atan2(centerY - indicatorEndY, centerX - indicatorEndX);
+    
+    // Calculate position for the arrowhead (near the endpoint, not at it)
+    // Position it 85% of the way along the line, toward the circle
+    const arrowPosX = centerX + (indicatorEndX - centerX) * 0.85;
+    const arrowPosY = centerY + (indicatorEndY - centerY) * 0.85;
+    
+    // Arrow size
+    const arrowSize = 10;
+    
+    // Draw the arrowhead
+    ctx.beginPath();
+    ctx.moveTo(arrowPosX, arrowPosY);
+    ctx.lineTo(
+        arrowPosX + arrowSize * Math.cos(arrowAngle - Math.PI/6),
+        arrowPosY + arrowSize * Math.sin(arrowAngle - Math.PI/6)
+    );
+    ctx.lineTo(
+        arrowPosX + arrowSize * Math.cos(arrowAngle + Math.PI/6),
+        arrowPosY + arrowSize * Math.sin(arrowAngle + Math.PI/6)
+    );
+    ctx.closePath();
+    ctx.fillStyle = '#FFA500';
+    ctx.fill();
+    
     // Draw the angle value at the end of the line - prevent edge cutoff
     ctx.fillStyle = '#FFA500'; // Orange
     ctx.textAlign = 'center';
