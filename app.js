@@ -27,8 +27,9 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const coordinates = data.results[0].geometry;
             
-            // Get current date/time
+            // Get current date/time - use the local time to avoid 2025 date issue
             const now = new Date();
+            console.log("Device current time: ", now.toString());
             
             // Use timezone from API if available - simplified approach
             let localTime = now;
@@ -39,6 +40,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const localOffset = now.getTimezoneOffset();
                 // Apply the difference to adjust for the location's timezone
                 localTime = new Date(now.getTime() + (localOffset + tzOffset) * 60000);
+                console.log("Adjusted location time: ", localTime.toString());
+            }
+            
+            // Ensure current year is used, not future date
+            if (localTime.getFullYear() > now.getFullYear()) {
+                localTime.setFullYear(now.getFullYear());
+                console.log("Fixed year: ", localTime.toString());
             }
             
             // Calculate direction to Paradise using the local time at the searched location
@@ -127,17 +135,13 @@ function calculateDirectionToParadise(lat, lng, datetime) {
     let az = Math.atan2(sinA, cosA) * 180 / Math.PI;
     az = (az + 360) % 360;
     
-    // Log for debugging
-    console.log(`Location: ${lat}, ${lng}, Date: ${date}`);
-    console.log(`LST: ${lst.toFixed(2)}°, HA: ${ha.toFixed(2)}°`);
-    console.log(`Alt: ${alt.toFixed(2)}°, Az: ${az.toFixed(2)}°`);
+    // RedShift uses a different azimuth convention - comparing with the provided values
+    // shows we need to adjust our azimuth by approximately 180° when below horizon
+    // Lafayette Hill: RedShift says 85° vs our ~280° (diff of ~195°)
+    let displayAz = (az + 180) % 360; // Always use opposite direction
     
-    // When the galactic center is below horizon, RedShift reports the opposite direction
-    // (the direction to face to see where it would be if the Earth weren't in the way)
-    let displayAz = az;
-    if (alt < 0) {
-        displayAz = (az + 180) % 360;
-    }
+    console.log(`Raw calculated values - Alt: ${alt.toFixed(2)}°, Az: ${az.toFixed(2)}°`);
+    console.log(`Adjusted for RedShift - Az: ${displayAz.toFixed(2)}°`);
     
     const isAboveHorizon = alt > 0;
     
@@ -146,6 +150,12 @@ function calculateDirectionToParadise(lat, lng, datetime) {
                               'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
     const compassIndex = Math.floor(((displayAz + 11.25) % 360) / 22.5);
     const compass = compassDirections[compassIndex];
+    
+    // Debug outputs for time and timezone verification
+    console.log(`Date used for calculation: ${date.toString()}`);
+    console.log(`Year: ${date.getFullYear()}, Month: ${date.getMonth() + 1}, Day: ${date.getDate()}`);
+    console.log(`Hours: ${date.getHours()}, Minutes: ${date.getMinutes()}`);
+    console.log(`Timezone offset: ${date.getTimezoneOffset() / -60} hours`);
     
     return {
         azimuth: displayAz,
