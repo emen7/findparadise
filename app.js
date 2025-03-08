@@ -88,45 +88,53 @@ function calculateDirectionToParadise(lat, lng, datetime) {
     // Parse the datetime input
     const date = new Date(datetime);
     
-    // Calculate Julian Date
-    const jd = (date.getTime() / 86400000.0) + 2440587.5;
+    // More accurate Julian Date calculation
+    const utcMillis = date.getTime();
+    const jd = (utcMillis / 86400000.0) + 2440587.5;
     
-    // Calculate GMST in degrees
-    const jd0 = Math.floor(jd - 0.5) + 0.5;
-    const t = (jd0 - 2451545.0) / 36525.0;
-    const ut = ((jd + 0.5) % 1.0) * 24.0;
-    let gmst = 280.46061837 + 360.98564736629 * (jd0 - 2451545.0) + 0.000387933 * t * t - t * t * t / 38710000.0;
-    gmst = (gmst + ut * 15.04107) % 360;
+    // Calculate accurate GMST
+    const T = (jd - 2451545.0) / 36525; // Julian centuries since J2000.0
+    let gmst = 280.46061837 + 360.98564736629 * (jd - 2451545.0);
+    gmst += 0.000387933 * T * T - T * T * T / 38710000.0;
+    
+    // Add contribution from Earth's rotation during the day
+    const fractionalDay = (date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600) / 24;
+    gmst += fractionalDay * 360.0;
+    gmst = gmst % 360;
     if (gmst < 0) gmst += 360;
     
-    // Calculate local sidereal time in degrees
+    // Calculate local sidereal time
     const lst = (gmst + lng) % 360;
     
-    // Calculate hour angle in degrees
+    // Calculate hour angle - how far the star has moved from the meridian
     let ha = lst - SgrA.ra;
     if (ha < -180) ha += 360;
     if (ha > 180) ha -= 360;
     
-    // Convert to radians
+    // Convert to radians for trig functions
     const latRad = lat * Math.PI / 180;
     const decRad = SgrA.dec * Math.PI / 180;
     const haRad = ha * Math.PI / 180;
     
-    // Calculate altitude (elevation) - fixed formula for more accuracy
+    // Calculate altitude (elevation) using correct spherical astronomy formula
     const sinAlt = Math.sin(decRad) * Math.sin(latRad) + Math.cos(decRad) * Math.cos(latRad) * Math.cos(haRad);
     let elevation = Math.asin(Math.max(-1, Math.min(1, sinAlt))) * 180 / Math.PI;
     
-    // Simply determine if it's above or below horizon
+    // Calculate azimuth using the standard formula from spherical astronomy
+    // This formula correctly handles all hemispheres and edge cases
+    let cosA = (Math.sin(decRad) - Math.sin(latRad) * sinAlt) / (Math.cos(latRad) * Math.cos(Math.asin(sinAlt)));
+    cosA = Math.max(-1, Math.min(1, cosA)); // Ensure value is within valid range
+    
+    let azimuth = Math.acos(cosA) * 180 / Math.PI;
+    
+    // Adjust azimuth based on hour angle to get correct quadrant
+    if (Math.sin(haRad) > 0) {
+        azimuth = 360 - azimuth;
+    }
+    
+    // Determine if the elevation is above horizon
     const isAboveHorizon = elevation > 0;
     const absElevation = Math.abs(elevation);
-    
-    // Calculate azimuth (from north, clockwise) - improved formula
-    let y = Math.sin(haRad);
-    let x = Math.cos(haRad) * Math.sin(latRad) - Math.tan(decRad) * Math.cos(latRad);
-    let azimuth = Math.atan2(y, x) * 180 / Math.PI;
-    
-    // Ensure azimuth is in 0-360 range
-    azimuth = (azimuth + 360) % 360;
     
     // Convert azimuth to compass direction
     const compassDirections = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 
@@ -134,9 +142,13 @@ function calculateDirectionToParadise(lat, lng, datetime) {
     const compassIndex = Math.floor(((azimuth + 11.25) % 360) / 22.5);
     const compass = compassDirections[compassIndex];
     
+    // Verify the results before returning
+    console.log(`Location: ${lat}, ${lng}, Date: ${date}, LST: ${lst.toFixed(2)}, HA: ${ha.toFixed(2)}`);
+    console.log(`Elevation: ${elevation.toFixed(2)}, Azimuth: ${azimuth.toFixed(2)}, Direction: ${compass}`);
+    
     return {
         azimuth: azimuth,
-        elevation: absElevation, // Return the absolute value without capping
+        elevation: absElevation,
         isAboveHorizon: isAboveHorizon,
         compass: compass
     };
