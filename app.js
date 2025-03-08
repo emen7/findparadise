@@ -27,91 +27,32 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const coordinates = data.results[0].geometry;
             
-            // Get current date/time in UTC
-            const nowUTC = new Date();
+            // Get current date/time
+            const now = new Date();
             
-            // Debug the date/time handling extensively
-            console.log("Starting time calculations:");
-            console.log("UTC time:", nowUTC.toUTCString());
-            console.log("Local time:", nowUTC.toString());
-            
-            // Get location info
-            let locationInfo = "";
-            let localTime = nowUTC;
-            
+            // Use timezone from API if available - simplified approach
+            let localTime = now;
             if (data.results[0].annotations && data.results[0].annotations.timezone) {
-                const tzInfo = data.results[0].annotations.timezone;
-                locationInfo = `${data.results[0].formatted} (${tzInfo.name}, UTC${tzInfo.offset_string})`;
-                
-                // Extract the raw components
-                const tzOffsetHours = tzInfo.offset_sec / 3600;
-                
-                // Log all timezone details for debugging
-                console.log("Target timezone details:", {
-                    name: tzInfo.name,
-                    offset_string: tzInfo.offset_string,
-                    offset_sec: tzInfo.offset_sec,
-                    offset_hours: tzOffsetHours
-                });
-                
-                // Create a new date using explicit year/month/day/hour from the target timezone
-                // This avoids all timezone conversion issues by building the time from scratch
-                const userLocalDate = new Date();
-                
-                // Current UTC hour
-                const utcHour = userLocalDate.getUTCHours();
-                const utcMinutes = userLocalDate.getUTCMinutes();
-                
-                // Calculate target location hour directly from UTC + offset
-                let targetHour = (utcHour + tzOffsetHours) % 24;
-                if (targetHour < 0) targetHour += 24;
-                
-                // Force create a Date object with the correct hour
-                localTime = new Date(Date.UTC(
-                    userLocalDate.getUTCFullYear(),
-                    userLocalDate.getUTCMonth(),
-                    userLocalDate.getUTCDate(),
-                    targetHour,
-                    utcMinutes,
-                    0
-                ));
-                
-                console.log("UTC components:", {
-                    year: userLocalDate.getUTCFullYear(),
-                    month: userLocalDate.getUTCMonth(),
-                    date: userLocalDate.getUTCDate(),
-                    hours: utcHour,
-                    minutes: utcMinutes
-                });
-                
-                console.log("Target location hour calculation:", {
-                    utcHour: utcHour,
-                    tzOffsetHours: tzOffsetHours,
-                    calculatedHour: targetHour,
-                });
-                
-                console.log("TARGET LOCATION TIME:", localTime.toUTCString());
-                
-                // Also log 12 hours forward/backward to see alternatives
-                const plus12 = new Date(localTime.getTime() + 12*60*60*1000);
-                const minus12 = new Date(localTime.getTime() - 12*60*60*1000);
-                console.log("TARGET +12h:", plus12.toUTCString());
-                console.log("TARGET -12h:", minus12.toUTCString());
+                // Get timezone offset in minutes
+                const tzOffset = data.results[0].annotations.timezone.offset_sec / 60;
+                // Get user's local offset in minutes
+                const localOffset = now.getTimezoneOffset();
+                // Apply the difference to adjust for the location's timezone
+                localTime = new Date(now.getTime() + (localOffset + tzOffset) * 60000);
             }
             
-            // Calculate direction to Paradise using the timestamp
-            const direction = calculateDirectionToParadise(coordinates.lat, coordinates.lng, localTime.getTime());
+            // Calculate direction to Paradise using the local time at the searched location
+            const direction = calculateDirectionToParadise(coordinates.lat, coordinates.lng, localTime);
             
-            // Format time using UTC methods to avoid browser timezone interference
-            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-            
-            let hours = localTime.getUTCHours();
-            const ampm = hours >= 12 ? 'PM' : 'AM';
-            hours = hours % 12;
-            hours = hours ? hours : 12; // the hour '0' should be '12'
-            
-            const timeString = `${days[localTime.getUTCDay()]}, ${months[localTime.getUTCMonth()]} ${localTime.getUTCDate()}, ${localTime.getUTCFullYear()}, ${hours}:${String(localTime.getUTCMinutes()).padStart(2, '0')} ${ampm}`;
+            // Basic formatting using locale string
+            const timeString = localTime.toLocaleString(undefined, {
+                weekday: 'short', 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
             
             resultDiv.innerHTML = `
                 <div class="result-section">
@@ -138,82 +79,71 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-function calculateDirectionToParadise(lat, lng, timestamp) {
-    // Use timestamp instead of Date object to avoid timezone issues
-    const date = new Date(timestamp);
+function calculateDirectionToParadise(lat, lng, datetime) {
+    // Ensure longitude is normalized to [-180, 180] range
+    if (lng > 180) lng -= 360;
+    if (lng < -180) lng += 360;
     
-    // Log date components for debugging
-    console.log("Calculation inputs:", {
-        lat: lat,
-        lng: lng,
-        timestamp: timestamp,
-        dateObject: date.toUTCString(),
-        dateComponents: {
-            UTCFullYear: date.getUTCFullYear(),
-            UTCMonth: date.getUTCMonth(),
-            UTCDate: date.getUTCDate(),
-            UTCHours: date.getUTCHours(),
-            UTCMinutes: date.getUTCMinutes()
-        }
-    });
-    
-    // Normalize longitude to the range [-180, 180]
-    if (lng > 180) {
-        lng -= 360;
-    } else if (lng < -180) {
-        lng += 360;
-    }
-    // SgrA* coordinates (Galactic Center) – J2000
+    // SgrA* coordinates (Galactic Center)
     const GC = {
-        ra: 266.41683, // degrees (17h 45m 40.04s)
-        dec: -29.00781 // degrees (-29° 0' 28.1")
+        ra: 266.41683, // Right Ascension in degrees
+        dec: -29.00781 // Declination in degrees
     };
     
-    // Calculate Julian Date
+    // Parse the datetime input
+    const date = new Date(datetime);
+    
+    // Calculate Julian Date - standard astronomy formula
     const jd = (date.getTime() / 86400000.0) + 2440587.5;
     
-    // Calculate GMST in degrees
+    // Calculate GMST in degrees - using standard formula
     const jd0 = Math.floor(jd - 0.5) + 0.5;
     const t = (jd0 - 2451545.0) / 36525.0;
     const ut = ((jd + 0.5) % 1.0) * 24.0;
-    let gmst = 280.46061837 + 360.98564736629 * (jd0 - 2451545.0) + 0.000387933*t*t - t*t*t/38710000.0;
-    gmst = (gmst + ut*15.04107) % 360;
+    let gmst = 280.46061837 + 360.98564736629 * (jd0 - 2451545.0) + 0.000387933 * t * t - t * t * t / 38710000.0;
+    gmst = (gmst + ut * 15.04107) % 360;
     if (gmst < 0) gmst += 360;
     
-    // Local sidereal time in degrees
+    // Calculate local sidereal time in degrees
     const lst = (gmst + lng) % 360;
     
-    // Hour angle (HA) of GC
+    // Calculate hour angle in degrees
     let ha = lst - GC.ra;
     if (ha < -180) ha += 360;
     if (ha > 180) ha -= 360;
     
-    // Convert lat, GC declination & HA to radians
-    const latRad = lat * Math.PI/180;
-    const decRad = GC.dec * Math.PI/180;
-    const haRad = ha * Math.PI/180;
+    // Convert to radians
+    const latRad = lat * Math.PI / 180;
+    const decRad = GC.dec * Math.PI / 180;
+    const haRad = ha * Math.PI / 180;
     
-    // Altitude (elevation): alt = arcsin( sin(dec)*sin(lat) + cos(dec)*cos(lat)*cos(HA) )
-    const sinAlt = Math.sin(decRad)*Math.sin(latRad) + Math.cos(decRad)*Math.cos(latRad)*Math.cos(haRad);
-    const alt = Math.asin(Math.max(-1, Math.min(1,sinAlt)))*180/Math.PI;
+    // Calculate altitude (elevation) - standard formula
+    const sinAlt = Math.sin(decRad) * Math.sin(latRad) + Math.cos(decRad) * Math.cos(latRad) * Math.cos(haRad);
+    const alt = Math.asin(Math.max(-1, Math.min(1, sinAlt))) * 180 / Math.PI;
     
-    // Azimuth: az = arctan2( sin(HA), cos(HA)*sin(lat) - tan(dec)*cos(lat) )
-    let azRad = Math.atan2(Math.sin(haRad), Math.cos(haRad)*Math.sin(latRad) - Math.tan(decRad)*Math.cos(latRad));
-    let az = (azRad*180/Math.PI + 360) % 360;
+    // Calculate azimuth - standard formula
+    const sinA = Math.sin(haRad) * Math.cos(decRad);
+    const cosA = Math.cos(haRad) * Math.sin(latRad) * Math.cos(decRad) - Math.sin(decRad) * Math.cos(latRad);
+    let az = Math.atan2(sinA, cosA) * 180 / Math.PI;
+    az = (az + 360) % 360;
     
-    // Flip azimuth by 180° if GC is below horizon so the “facing” direction reflects what RedShift reports.
+    // Log for debugging
+    console.log(`Location: ${lat}, ${lng}, Date: ${date}`);
+    console.log(`LST: ${lst.toFixed(2)}°, HA: ${ha.toFixed(2)}°`);
+    console.log(`Alt: ${alt.toFixed(2)}°, Az: ${az.toFixed(2)}°`);
+    
+    // When the galactic center is below horizon, RedShift reports the opposite direction
+    // (the direction to face to see where it would be if the Earth weren't in the way)
     let displayAz = az;
     if (alt < 0) {
         displayAz = (az + 180) % 360;
     }
     
-    console.log(`Location: ${lat.toFixed(2)}°, ${lng.toFixed(2)}°, HA: ${ha.toFixed(2)}°`);
-    console.log(`Altitude: ${alt.toFixed(2)}°, Display Azimuth: ${displayAz.toFixed(2)}°`);
-    
     const isAboveHorizon = alt > 0;
     
-    const compassDirections = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE',
-        'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+    // Convert azimuth to compass direction
+    const compassDirections = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 
+                              'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
     const compassIndex = Math.floor(((displayAz + 11.25) % 360) / 22.5);
     const compass = compassDirections[compassIndex];
     
