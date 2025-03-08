@@ -17,10 +17,24 @@
             /* modern red accent */
         }
 
+        /* Improve overall layout and spacing */
         body {
             font-family: 'Roboto', sans-serif;
             background-color: var(--background-color);
             color: var(--text-color);
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 800px;
+            margin: 20px auto;
+            text-align: center;
         }
 
         h1,
@@ -34,9 +48,12 @@
         }
 
         h1 {
-            font-size: 2.2em;
-            /* Increased size for Find Paradise heading */
-            margin-bottom: 0.8em;
+            font-size: 2.5em;
+            /* Slightly larger */
+            margin: 40px 0 30px;
+            /* More balanced spacing */
+            font-weight: 300;
+            /* Lighter weight for elegance */
         }
 
         a {
@@ -65,24 +82,53 @@
             /* Slightly lighter background for buttons */
         }
 
-        /* Add button sizing - more subtle enlargement */
+        /* Improved form styling */
+        #paradiseForm {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        #paradiseForm label {
+            display: inline-block;
+            margin-right: 15px;
+            font-weight: 400;
+        }
+
+        #paradiseForm input {
+            width: 200px;
+            /* Fixed width for consistency */
+            padding: 8px 12px;
+            height: 24px;
+            line-height: 24px;
+            border: 1px solid #666;
+            border-radius: 4px;
+            /* Slightly rounded corners */
+            background-color: #333;
+            /* Darker background for input */
+            color: #e0e0e0;
+        }
+
         #paradiseForm button {
             font-size: 1.1em;
-            /* Increase button text size by 10% */
-            padding: 0.5em 1em;
-            margin-top: 0.5em;
-            margin-left: 1.5em;
-            /* Add some left margin to move button in from edge */
-            border-radius: 8px;
-            /* Add rounded corners to the button */
+            padding: 8px 24px;
+            margin-top: 5px;
+            border-radius: 20px;
+            /* More rounded button */
             border: none;
-            /* Remove default borders */
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-            /* Add subtle shadow instead */
             background-color: #444444;
             color: #FFA500;
-            /* Change from light gray to orange */
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
 
         #paradiseForm button:hover {
@@ -145,29 +191,37 @@
             border: 1px solid #666;
             /* Set border to 1px with a subtle color */
         }
+
+        /* Results area styling */
+        #result {
+            text-align: left;
+            padding: 0 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
     </style>
 </head>
 
 <body class="dark-mode">
-    <h1><br>Find Paradise</h1>
-    <form id="paradiseForm">
-        <label for="location">Enter town or city:</label>
-        <input type="text" id="location" name="location" required />
-        <br><br>
-        <!-- Removed datetime input -->
-        <button type="submit">Locate</button>
-    </form>
-    <p id="result"></p>
+    <div class="container">
+        <h1>Find Paradise</h1>
+        <form id="paradiseForm">
+            <div class="input-group">
+                <label for="location">Enter town or city:</label>
+                <input type="text" id="location" name="location" required />
+            </div>
+            <button type="submit">Locate</button>
+        </form>
+        <p id="result"></p>
 
-    <!-- Add container div for canvas to help with centering -->
-    <div style="display: flex; justify-content: center; width: 100%;">
-        <!-- Remove the asymmetric margin and use auto horizontal margin for responsive centering -->
-        <canvas id="directionIndicator" width="400" height="320"
-            style="display: none; margin: 20px auto; max-width: 100%;"></canvas>
+        <!-- Canvas container -->
+        <div style="display: flex; justify-content: center; width: 100%;">
+            <canvas id="directionIndicator" width="400" height="320"
+                style="display: none; margin: 20px auto; max-width: 100%;"></canvas>
+        </div>
     </div>
 
     <script src="app.js"></script>
-    <!-- Removed toggle logic script -->
 </body>
 
 </html>
