@@ -11,15 +11,32 @@ document.addEventListener('DOMContentLoaded', () => {
         resultDiv.innerHTML = 'Calculating direction to Paradise...';
         
         try {
-            // For Vercel deployment, use API endpoint to securely access API key
-            const geocodeUrl = `/api/geocode?location=${encodeURIComponent(location)}`;
+            // Determine whether we're running locally or on Vercel
+            let geocodeUrl;
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                // For local testing - use direct OpenCage API (not recommended for production)
+                // You would need to add your key directly for testing
+                const testApiKey = 'your-test-api-key'; // Replace with a test key for local development
+                geocodeUrl = `https://api.opencagedata.com/geocode/v1/json?q=${encodeURIComponent(location)}&key=${testApiKey}`;
+            } else {
+                // For production deployment - use API endpoint
+                geocodeUrl = `/api/geocode?location=${encodeURIComponent(location)}`;
+            }
+            
+            console.log("Fetching geocode data from:", geocodeUrl.replace(/key=([^&]*)/, 'key=HIDDEN'));
             
             const response = await fetch(geocodeUrl);
+            console.log("API Response status:", response.status);
+            
             if (!response.ok) {
-                throw new Error('Geocoding service unavailable');
+                const errorText = await response.text();
+                console.error("API Error:", errorText);
+                throw new Error(`Geocoding service unavailable: ${response.status}`);
             }
             
             const data = await response.json();
+            console.log("API Data received:", data);
+            
             if (!data || !data.results || data.results.length === 0) {
                 resultDiv.innerHTML = 'Location not found. Please try a different location.';
                 return;
@@ -73,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
             drawDirectionIndicator(direction.azimuth, direction.isAboveHorizon ? direction.elevation : -direction.elevation);
         } catch (error) {
             console.error('Error:', error);
-            resultDiv.innerHTML = 'Error calculating direction. Please try again.';
+            resultDiv.innerHTML = `Error: ${error.message || 'Failed to calculate direction'}. Please try again.`;
         }
     });
 });
