@@ -172,17 +172,38 @@ function formatShortLocation(geocodeResult) {
     
     const components = geocodeResult.components;
     
-    // Get the city/town name - check various possible fields
-    let locality = components.city || components.town || components.village || 
-                   components.hamlet || components.suburb || components.neighbourhood;
+    // Get the city/town name with better prioritization
+    // For US locations, city is often more relevant than township/county
+    let locality = components.city || 
+                  components.town || 
+                  components.village ||
+                  components.municipality ||
+                  components.district ||
+                  components.hamlet || 
+                  components.suburb;
+                  
+    // For US addresses specifically, handle township differently
+    if (components.country_code && components.country_code.toLowerCase() === 'us') {
+        // If we don't have a locality but do have a formatted component, extract just the city name
+        if (!locality && geocodeResult.formatted) {
+            const parts = geocodeResult.formatted.split(',');
+            if (parts.length > 1) {
+                locality = parts[0].trim(); // Just use the first part
+            }
+        }
+    }
     
-    // Get the state/province if available
-    let region = components.state || components.province || components.state_code;
+    // Get the state/province (without county/township)
+    let region = components.state_code || components.state || components.province;
     
-    // Get country and abbreviate it
+    // For US addresses, prefer state_code (PA) over state (Pennsylvania)
+    if (components.country_code && components.country_code.toLowerCase() === 'us') {
+        region = components.state_code || components.state;
+    }
+    
+    // Get country code or abbreviate
     let country = "";
     if (components.country_code) {
-        // Convert country code to uppercase
         country = components.country_code.toUpperCase();
     } else if (components.country) {
         // Abbreviate countries with common abbreviations
@@ -214,6 +235,15 @@ function formatShortLocation(geocodeResult) {
     if (country) {
         if (result) result += ", ";
         result += country;
+    }
+    
+    // If all else fails, extract the first portion of the formatted address
+    if (!result && geocodeResult.formatted) {
+        const parts = geocodeResult.formatted.split(',');
+        result = parts[0].trim();
+        if (parts.length > 1 && parts[1].trim().length <= 3) {
+            result += ", " + parts[1].trim();
+        }
     }
     
     return result || geocodeResult.formatted || "Unknown location";
