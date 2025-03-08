@@ -171,7 +171,36 @@ function formatShortLocation(geocodeResult) {
     }
     
     const components = geocodeResult.components;
+    const formatted = geocodeResult.formatted || "";
     
+    // For US locations, try to extract the recognizable locality name from the formatted address
+    if (components.country_code && components.country_code.toLowerCase() === 'us') {
+        // First check for common place components
+        let locality = components.city || 
+                      components.town || 
+                      components.village ||
+                      components.hamlet;
+        
+        // If not found, and it's a township situation, use the first part of the formatted address
+        // This typically contains the common name people recognize
+        if ((!locality || locality.includes("Township")) && formatted) {
+            // For "Lafayette Hill, Whitemarsh Township, PA" -> extract "Lafayette Hill"
+            const parts = formatted.split(',');
+            if (parts.length > 0) {
+                locality = parts[0].trim();
+            }
+        }
+        
+        // Get the state (preferring the abbreviation)
+        const region = components.state_code || components.state;
+        
+        // If we have both locality and region, format as "City, ST"
+        if (locality && region) {
+            return `${locality}, ${region}, USA`;
+        }
+    }
+    
+    // Fall back to general approach for non-US locations or if the above didn't work
     // Get the city/town name with better prioritization
     // For US locations, city is often more relevant than township/county
     let locality = components.city || 
