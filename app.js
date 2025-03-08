@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function calculateDirectionToParadise(lat, lng, datetime) {
-    // Sagittarius A* (Galactic Center) - fixed J2000 coordinates
+    // SgrA* coordinates (Galactic Center)
     const GC = {
         ra: 266.41683, // Right Ascension in degrees (17h 45m 40.04s)
         dec: -29.00781 // Declination in degrees (-29° 0' 28.1")
@@ -88,10 +88,10 @@ function calculateDirectionToParadise(lat, lng, datetime) {
     // Parse the datetime input
     const date = new Date(datetime);
     
-    // Calculate Julian Date with more precision
+    // Calculate Julian Date
     const jd = (date.getTime() / 86400000.0) + 2440587.5;
     
-    // Calculate GMST (Greenwich Mean Sidereal Time)
+    // Calculate GMST in degrees
     const jd0 = Math.floor(jd - 0.5) + 0.5;
     const t = (jd0 - 2451545.0) / 36525.0;
     const ut = ((jd + 0.5) % 1.0) * 24.0;
@@ -99,54 +99,45 @@ function calculateDirectionToParadise(lat, lng, datetime) {
     gmst = (gmst + ut * 15.04107) % 360;
     if (gmst < 0) gmst += 360;
     
-    // Calculate local sidereal time
+    // Calculate local sidereal time in degrees
     const lst = (gmst + lng) % 360;
     
-    // Calculate hour angle
+    // Calculate hour angle in degrees
     let ha = lst - GC.ra;
     if (ha < -180) ha += 360;
     if (ha > 180) ha -= 360;
     
-    // Convert to radians for trigonometric calculations
+    // Convert angles to radians
     const latRad = lat * Math.PI / 180;
     const decRad = GC.dec * Math.PI / 180;
     const haRad = ha * Math.PI / 180;
     
-    // Calculate altitude/elevation using standard formula
+    // Calculate altitude (elevation)
     const sinAlt = Math.sin(decRad) * Math.sin(latRad) + Math.cos(decRad) * Math.cos(latRad) * Math.cos(haRad);
     const alt = Math.asin(Math.max(-1, Math.min(1, sinAlt))) * 180 / Math.PI;
     
-    // Calculate azimuth - fixed formula for southern hemisphere
-    // This is the key fix: proper handling of azimuth calculation for any latitude
-    let sinA = -Math.sin(haRad) * Math.cos(decRad) / Math.cos(Math.asin(sinAlt));
-    let cosA = (Math.sin(decRad) - Math.sin(latRad) * sinAlt) / (Math.cos(latRad) * Math.cos(Math.asin(sinAlt)));
+    // Calculate azimuth using standard horizontal coordinates conversion:
+    // az = arctan2( - sin(HA), tan(dec)*cos(lat) - sin(lat)*cos(HA) )
+    let azRad = Math.atan2(-Math.sin(haRad), Math.tan(decRad) * Math.cos(latRad) - Math.sin(latRad) * Math.cos(haRad));
+    let az = (azRad * 180 / Math.PI + 360) % 360;
     
-    // Use atan2 for proper quadrant handling
-    let az = Math.atan2(sinA, cosA) * 180 / Math.PI;
-    // Normalize to 0-360 range
-    if (az < 0) az += 360;
+    // Debug logging
+    console.log(`Location: ${lat.toFixed(2)}°, ${lng.toFixed(2)}°, HA: ${ha.toFixed(2)}°`);
+    console.log(`Altitude: ${alt.toFixed(2)}°, Azimuth: ${az.toFixed(2)}°`);
     
-    // Log calculations for debugging
-    console.log(`Location: ${lat.toFixed(2)}°, ${lng.toFixed(2)}°, Hour Angle: ${ha.toFixed(2)}°`);
-    console.log(`Alt: ${alt.toFixed(2)}°, Az: ${az.toFixed(2)}°`);
-    
-    // For Augusta, hard-code correct values for testing
-    if (Math.abs(lat + 34.3) < 0.5 && Math.abs(lng - 115.2) < 0.5) {
-        console.log("Augusta detected - applying special correction");
-        alt = 63; // Up, not down
-        az = 268; // Correct azimuth
-    }
+    const isAboveHorizon = alt > 0;
     
     // Convert azimuth to compass direction
     const compassDirections = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 
-                              'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+                               'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
     const compassIndex = Math.floor(((az + 11.25) % 360) / 22.5);
+    const compass = compassDirections[compassIndex];
     
     return {
         azimuth: az,
-        elevation: Math.abs(alt),
-        isAboveHorizon: alt > 0,
-        compass: compassDirections[compassIndex]
+        elevation: Math.abs(alt), // absolute value for display
+        isAboveHorizon: isAboveHorizon,
+        compass: compass
     };
 }
 
