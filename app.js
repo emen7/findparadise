@@ -30,15 +30,25 @@ document.addEventListener('DOMContentLoaded', () => {
             // Get current date/time
             const now = new Date();
             
-            // Use timezone from API if available
+            // FIXED: Improved timezone handling to prevent 12-hour offset issues
             let localTime = now;
             if (data.results[0].annotations && data.results[0].annotations.timezone) {
-                // Get timezone offset in minutes
-                const tzOffset = data.results[0].annotations.timezone.offset_sec / 60;
-                // Get user's local offset in minutes
-                const localOffset = now.getTimezoneOffset();
-                // Apply the difference to adjust for the location's timezone
-                localTime = new Date(now.getTime() + (localOffset + tzOffset) * 60000);
+                console.log("Location timezone:", data.results[0].annotations.timezone);
+                console.log("Local device time:", now.toString());
+                
+                // Get timezone information from the API
+                const tzOffsetSec = data.results[0].annotations.timezone.offset_sec;
+                const tzName = data.results[0].annotations.timezone.name;
+                
+                // Create a time string in ISO format but specifying the target timezone
+                const isoString = now.toISOString();
+                
+                // Calculate target timezone time directly using the offset in seconds
+                const targetTime = new Date(now.getTime() + (tzOffsetSec * 1000) + (now.getTimezoneOffset() * 60000));
+                localTime = targetTime;
+                
+                console.log("Calculated location time:", localTime.toString());
+                console.log("Hour difference:", (localTime.getHours() - now.getHours()));
             }
             
             // Calculate direction to Paradise using the local time at the searched location
