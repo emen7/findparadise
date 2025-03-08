@@ -11,32 +11,15 @@ document.addEventListener('DOMContentLoaded', () => {
         resultDiv.innerHTML = 'Calculating direction to Paradise...';
         
         try {
-            // Determine whether we're running locally or on Vercel
-            let geocodeUrl;
-            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                // For local testing - use direct OpenCage API (not recommended for production)
-                // You would need to add your key directly for testing
-                const testApiKey = 'your-test-api-key'; // Replace with a test key for local development
-                geocodeUrl = `https://api.opencagedata.com/geocode/v1/json?q=${encodeURIComponent(location)}&key=${testApiKey}`;
-            } else {
-                // For production deployment - use API endpoint
-                geocodeUrl = `/api/geocode?location=${encodeURIComponent(location)}`;
-            }
-            
-            console.log("Fetching geocode data from:", geocodeUrl.replace(/key=([^&]*)/, 'key=HIDDEN'));
+            // For Vercel deployment, use API endpoint to securely access API key
+            const geocodeUrl = `/api/geocode?location=${encodeURIComponent(location)}`;
             
             const response = await fetch(geocodeUrl);
-            console.log("API Response status:", response.status);
-            
             if (!response.ok) {
-                const errorText = await response.text();
-                console.error("API Error:", errorText);
-                throw new Error(`Geocoding service unavailable: ${response.status}`);
+                throw new Error('Geocoding service unavailable');
             }
             
             const data = await response.json();
-            console.log("API Data received:", data);
-            
             if (!data || !data.results || data.results.length === 0) {
                 resultDiv.innerHTML = 'Location not found. Please try a different location.';
                 return;
@@ -90,91 +73,74 @@ document.addEventListener('DOMContentLoaded', () => {
             drawDirectionIndicator(direction.azimuth, direction.isAboveHorizon ? direction.elevation : -direction.elevation);
         } catch (error) {
             console.error('Error:', error);
-            resultDiv.innerHTML = `Error: ${error.message || 'Failed to calculate direction'}. Please try again.`;
+            resultDiv.innerHTML = 'Error calculating direction. Please try again.';
         }
     });
 });
 
 function calculateDirectionToParadise(lat, lng, datetime) {
-    // Galactic Center (SgrA*) - J2000 coordinates
-    const GC = {
-        ra: 17.761111 * 15, // RA: 17h 45m 40.04s to degrees (multiply by 15)
-        dec: -29.0078       // Dec: -29° 00′ 28.1″
+    // SgrA* coordinates (Galactic Center)
+    const SgrA = {
+        ra: 266.41683, // Right Ascension in degrees (17h 45m 40.04s)
+        dec: -29.00781 // Declination in degrees (-29° 0' 28.1")
     };
     
-    // Convert input date to UTC
+    // Parse the datetime input
     const date = new Date(datetime);
     
-    // STEP 1: Calculate Julian Date (days since Jan 1, 4713 BC Greenwich noon)
-    const y = date.getUTCFullYear();
-    const m = date.getUTCMonth() + 1;
-    const d = date.getUTCDate();
-    let jd = 367 * y - Math.floor(7 * (y + Math.floor((m + 9) / 12)) / 4) - 
-             Math.floor(3 * (Math.floor((y + (m - 9) / 7) / 100) + 1) / 4) + 
-             Math.floor(275 * m / 9) + d + 1721028.5;
+    // Calculate Julian Date
+    const jd = (date.getTime() / 86400000.0) + 2440587.5;
     
-    // Add time of day
-    jd += (date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600) / 24;
+    // Calculate GMST in degrees
+    const jd0 = Math.floor(jd - 0.5) + 0.5;
+    const t = (jd0 - 2451545.0) / 36525.0;
+    const ut = ((jd + 0.5) % 1.0) * 24.0;
+    let gmst = 280.46061837 + 360.98564736629 * (jd0 - 2451545.0) + 0.000387933 * t * t - t * t * t / 38710000.0;
+    gmst = (gmst + ut * 15.04107) % 360;
+    if (gmst < 0) gmst += 360;
     
-    // STEP 2: Calculate GMST (Greenwich Mean Sidereal Time)
-    // Days since J2000 epoch
-    const jd2000 = jd - 2451545.0;
-    const t = jd2000 / 36525;  // Julian Centuries
+    // Calculate local sidereal time in degrees
+    const lst = (gmst + lng) % 360;
     
-    // GMST at 0h UT formula (in hours)
-    let gmst = 6.697374558 + 0.06570982441908 * jd2000 + 0.000026 * t * t;
-    
-    // Add correction for current time of day
-    const H = (date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600);
-    gmst = gmst + H * 1.002737909;
-    
-    // Convert to range 0-24
-    gmst = gmst % 24;
-    if (gmst < 0) gmst += 24;
-    
-    // STEP 3: Calculate Local Sidereal Time (adding longitude, expressed in hours)
-    let lst = gmst + lng / 15;
-    // Convert to range 0-24
-    lst = lst % 24;
-    if (lst < 0) lst += 24;
-    
-    // STEP 4: Calculate Hour Angle of the Galactic Center (in degrees)
-    let ha = (lst * 15) - GC.ra;  // Convert LST to degrees then subtract RA
+    // Calculate hour angle in degrees
+    let ha = lst - SgrA.ra;
     if (ha < -180) ha += 360;
     if (ha > 180) ha -= 360;
     
-    // STEP 5: Convert to radians for trig functions
+    // Convert to radians
     const latRad = lat * Math.PI / 180;
-    const decRad = GC.dec * Math.PI / 180;
+    const decRad = SgrA.dec * Math.PI / 180;
     const haRad = ha * Math.PI / 180;
     
-    // STEP 6: Calculate altitude/elevation
+    // Calculate altitude (elevation)
     const sinAlt = Math.sin(decRad) * Math.sin(latRad) + Math.cos(decRad) * Math.cos(latRad) * Math.cos(haRad);
-    const alt = Math.asin(Math.max(-1, Math.min(1, sinAlt))) * 180 / Math.PI;
+    let elevation = Math.asin(Math.max(-1, Math.min(1, sinAlt))) * 180 / Math.PI;
     
-    // STEP 7: Calculate azimuth (0 = North, 90 = East, 180 = South, 270 = West)
-    // Numerator and denominator for atan2 to calculate azimuth
-    const y = Math.sin(haRad);
-    const x = Math.cos(haRad) * Math.sin(latRad) - Math.tan(decRad) * Math.cos(latRad);
+    // Simply determine if it's above or below horizon, but keep actual value
+    const isAboveHorizon = elevation > 0;
+    // Use absolute value only for display purposes, don't cap at 45
+    const absElevation = Math.abs(elevation);
     
-    // Use atan2 to get correct quadrant
-    let az = Math.atan2(y, x) * 180 / Math.PI + 180; // +180 to convert from -180:180 to 0:360 with north at 0
+    // Calculate azimuth (from north, clockwise)
+    const cosAz = (Math.sin(decRad) - Math.sin(latRad) * sinAlt) / (Math.cos(latRad) * Math.cos(Math.asin(sinAlt)));
+    let azimuth = Math.acos(Math.max(-1, Math.min(1, cosAz))) * 180 / Math.PI;
     
-    // Debug output
-    console.log(`JD: ${jd.toFixed(5)}, GMST: ${(gmst * 15).toFixed(5)}°, LST: ${(lst * 15).toFixed(5)}°`);
-    console.log(`HA: ${ha.toFixed(5)}°, Alt: ${alt.toFixed(5)}°, Az: ${az.toFixed(5)}°`);
-    console.log(`Location: ${lat.toFixed(5)}°, ${lng.toFixed(5)}°, Time UTC: ${date.toUTCString()}`);
+    // Determine the quadrant for azimuth
+    if (Math.sin(haRad) > 0) {
+        azimuth = 360 - azimuth;
+    }
     
     // Convert azimuth to compass direction
     const compassDirections = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 
                               'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
-    const compassIndex = Math.floor(((az + 11.25) % 360) / 22.5);
+    const compassIndex = Math.floor(((azimuth + 11.25) % 360) / 22.5);
+    const compass = compassDirections[compassIndex];
     
     return {
-        azimuth: az,
-        elevation: Math.abs(alt),
-        isAboveHorizon: alt > 0,
-        compass: compassDirections[compassIndex]
+        azimuth: azimuth,
+        elevation: absElevation, // Return the absolute value without capping
+        isAboveHorizon: isAboveHorizon,
+        compass: compass
     };
 }
 
