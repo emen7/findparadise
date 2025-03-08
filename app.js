@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 
                 <div class="result-section">
-                    <strong>At Local Time:</strong> ${timeString}
+                    <strong>At Local Time (${data.results[0].annotations && data.results[0].annotations.timezone ? data.results[0].annotations.timezone.name : "local"}):</strong> ${timeString}
                 </div>
                 
                 <div class="result-section">
