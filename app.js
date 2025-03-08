@@ -79,6 +79,12 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function calculateDirectionToParadise(lat, lng, datetime) {
+    // Normalize longitude to the range [-180, 180]
+    if (lng > 180) {
+        lng -= 360;
+    } else if (lng < -180) {
+        lng += 360;
+    }
     // SgrA* coordinates (Galactic Center) – J2000
     const GC = {
         ra: 266.41683, // degrees (17h 45m 40.04s)
