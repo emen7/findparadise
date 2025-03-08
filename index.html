@@ -114,15 +114,17 @@
             }
         }
 
-        /* Adjust spacing between label and input but keep box size the same */
+        /* Adjust spacing between label and input while restoring original box size */
         #paradiseForm label {
             display: inline-block;
             margin-right: 15px;
         }
 
         #paradiseForm input {
-            width: 50%;
-            max-width: 200px;
+            width: 30%;
+            /* Reduced from 50% to match original size */
+            max-width: 150px;
+            /* Reduced from 200px to match original size */
             padding: 8px;
             margin-bottom: 15px;
         }
