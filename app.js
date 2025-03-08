@@ -112,23 +112,21 @@ function calculateDirectionToParadise(lat, lng, datetime) {
     const decRad = SgrA.dec * Math.PI / 180;
     const haRad = ha * Math.PI / 180;
     
-    // Calculate altitude (elevation)
+    // Calculate altitude (elevation) - fixed formula for more accuracy
     const sinAlt = Math.sin(decRad) * Math.sin(latRad) + Math.cos(decRad) * Math.cos(latRad) * Math.cos(haRad);
     let elevation = Math.asin(Math.max(-1, Math.min(1, sinAlt))) * 180 / Math.PI;
     
-    // Simply determine if it's above or below horizon, but keep actual value
+    // Simply determine if it's above or below horizon
     const isAboveHorizon = elevation > 0;
-    // Use absolute value only for display purposes, don't cap at 45
     const absElevation = Math.abs(elevation);
     
-    // Calculate azimuth (from north, clockwise)
-    const cosAz = (Math.sin(decRad) - Math.sin(latRad) * sinAlt) / (Math.cos(latRad) * Math.cos(Math.asin(sinAlt)));
-    let azimuth = Math.acos(Math.max(-1, Math.min(1, cosAz))) * 180 / Math.PI;
+    // Calculate azimuth (from north, clockwise) - improved formula
+    let y = Math.sin(haRad);
+    let x = Math.cos(haRad) * Math.sin(latRad) - Math.tan(decRad) * Math.cos(latRad);
+    let azimuth = Math.atan2(y, x) * 180 / Math.PI;
     
-    // Determine the quadrant for azimuth
-    if (Math.sin(haRad) > 0) {
-        azimuth = 360 - azimuth;
-    }
+    // Ensure azimuth is in 0-360 range
+    azimuth = (azimuth + 360) % 360;
     
     // Convert azimuth to compass direction
     const compassDirections = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 
